@@ -176,6 +176,7 @@ header p{color:var(--muted);font-size:13px;margin-top:3px}
   .digital small{display:none}
 }
 </style>
+<link rel="stylesheet" href="/css/extra.css">
 </head>
 <body>
 <div id="sky"></div><canvas id="stars"></canvas>
@@ -214,9 +215,15 @@ header p{color:var(--muted);font-size:13px;margin-top:3px}
 <script src="/vendor/pptxgen.bundle.js"></script>
 <script src="/js/export.js"></script>
 <script src="/js/pptx.js"></script>
+<script src="/js/cards.js"></script>
 <script src="/js/veri.js"></script>
+<script src="/js/nielsen.js"></script>
+<script src="/js/haber.js"></script>
+<script src="/js/radyo.js"></script>
+<script src="/js/sihirbaz.js"></script>
+<script src="/js/tema.js"></script>
 <script>
-const RENDER={sablon:r=>renderSablon(r),veri:r=>renderVeri(r)};
+const RENDER={sablon:r=>renderSablon(r),veri:r=>renderVeri(r),nielsen:r=>renderNielsen(r),haber:r=>renderHaber(r),radyo:r=>renderRadyo(r),sihirbaz:r=>renderSihirbaz(r),tema:r=>renderTema(r)};
 const TABS={
   sablon:{t:"Şablon Excel giriş",d:"Boş şablonları yükle, sütunları tanıt ve kaydet",i:"ti-file-spreadsheet",s:2},
   veri:{t:"Veri dolu Excel giriş",d:"Dolu dosyayı yükle, 12 hazır grafik otomatik oluşsun",i:"ti-table-import",s:2},

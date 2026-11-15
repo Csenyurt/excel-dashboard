@@ -243,13 +243,17 @@
         <span class="pill ${info.missing.length ? 'warn' : 'ok'}"><i class="ti ti-${info.missing.length ? 'alert-triangle' : 'circle-check'}"></i>${info.matched}/${info.total} sütun eşleşti</span>
         ${info.missing.length ? `<span class="pill warn" title="${esc(info.missing.join(', '))}">Eksik: ${esc(info.missing.slice(0, 3).join(', '))}${info.missing.length > 3 ? '…' : ''}</span>` : ''}
         <button class="btn ghost" id="v-reset" style="margin-left:auto"><i class="ti ti-upload"></i> Başka dosya</button>
+        <button class="btn ghost" id="v-show"><i class="ti ti-player-play"></i> Sunum modu</button>
         <button class="btn" id="v-all-video"><i class="ti ti-movie"></i> Rapor PPTX (video)</button>
         <button class="btn" id="v-all-pptx"><i class="ti ti-presentation"></i> Rapor PPTX</button>
         <button class="btn gold" id="v-all"><i class="ti ti-file-type-pdf"></i> Rapor PDF</button></div>
+      ${info.tpl && M.dims.length ? `<div class="v-sum v-filter"><span class="pill"><i class="ti ti-user-star"></i> Müşteriye özel rapor</span>
+        <select class="fsel" id="v-fdim">${M.dims.map(d => `<option${info.filter && info.filter.dim === d ? ' selected' : ''}>${esc(d)}</option>`).join('')}</select>
+        <select class="fsel" id="v-fval"><option value="">Tümü</option></select>${info.filter ? `<span class="pill ok"><i class="ti ti-filter"></i> ${esc(info.filter.dim)}: ${esc(info.filter.val)}</span>` : ''}</div>` : ''}
       <div class="kpis">${kpis(M).map(k => `<div class="kpi"><i class="ti ${k.i}"></i><div><span>${esc(k.l)}</span><b class="${k.c || ''}">${esc(k.v)}</b></div></div>`).join('')}</div>
       <div class="cgrid">${built.map((c, i) => `<div class="ccard${c.wide ? ' wide' : ''}" style="animation-delay:${i * 60}ms">
         <div class="cc-h"><div><b><i class="ti ${c.icon}"></i> <span class="cc-t">${esc(c.style.title || c.name)}</span></b><small class="cc-s">${esc(c.need ? 'Bu grafik için ' + c.need + ' gerekli' : (c.style.sub || c.sub))}</small></div>
-          <div class="cc-tools"><button class="icon-btn gear" data-gear="${c.id}" title="Görünüm ayarları"${c.need ? ' disabled' : ''}><i class="ti ti-adjustments"></i></button><button class="icon-btn dl" data-dl="${c.id}" title="İndir: PNG · PDF · PPTX"${c.need ? ' disabled' : ''}><i class="ti ti-download"></i></button></div></div>
+          <div class="cc-tools"><button class="icon-btn gear" data-gear="${c.id}" title="Görünüm ayarları"${c.need ? ' disabled' : ''}><i class="ti ti-adjustments"></i></button><button class="icon-btn add" data-add="${c.id}" title="Sunuma ekle"${c.need ? ' disabled' : ''}><i class="ti ti-presentation-analytics"></i></button><button class="icon-btn dl" data-dl="${c.id}" title="İndir: PNG · PDF · PPTX"${c.need ? ' disabled' : ''}><i class="ti ti-download"></i></button></div></div>
         <div class="cc-body" id="ch-${c.id}">${c.need ? '<div class="empty-small"><i class="ti ti-chart-dots-3"></i><br>Şablonda gerekli sütun yok</div>' : ''}</div>
         ${c.need ? '' : `<div class="cc-foot"><i class="ti ti-info-circle"></i> ${esc(noteFor(c, M, info))}</div>`}</div>`).join('')}</div>`;
     box.querySelector('#v-reset').onclick = () => { if (G.Stil) G.Stil.close(); disposeCharts(); box.innerHTML = ''; root.querySelector('#v-setup').style.display = ''; };
@@ -281,7 +285,19 @@
       });
     });
     box.querySelectorAll('[data-dl]').forEach(btn => btn.onclick = e => { e.stopPropagation(); G.Export.openMenu(btn, () => CURRENT[btn.dataset.dl]); });
-    const reportInfo = () => ({ title: info.tplName || 'Rapor', subtitle: info.file + ' · ' + M.rows.length.toLocaleString('tr-TR') + ' satır', kpis: kpis(M),
+    const fd = box.querySelector('#v-fdim'), fv = box.querySelector('#v-fval');
+    if (fd) {
+      const vals = () => { const d = fd.value; const u = [...new Set(info.rows.map(r => r[d]).filter(v => v !== null && v !== undefined && v !== ''))].map(String).sort((a, b) => a.localeCompare(b, 'tr'));
+        fv.innerHTML = '<option value="">Tümü</option>' + u.map(v => `<option${info.filter && info.filter.dim === d && info.filter.val === v ? ' selected' : ''}>${esc(v)}</option>`).join(''); };
+      vals(); fd.onchange = vals;
+      fv.onchange = () => { const d = fd.value, v = fv.value; const rows = v ? info.rows.filter(r => String(r[d]) === v) : info.rows;
+        renderResult(root, buildModel(info.tpl, rows.map(r => { const o = Object.assign({}, r); delete o.__t; return o; })), Object.assign({}, info, { filter: v ? { dim: d, val: v } : null })); };
+    }
+    box.querySelectorAll('[data-add]').forEach(btn => btn.onclick = () => { const c = CURRENT[btn.dataset.add]; if (!c || !G.Basket) return; G.Basket.add(c); btn.classList.add('done'); btn.innerHTML = '<i class="ti ti-check"></i>';
+      setTimeout(() => { btn.classList.remove('done'); btn.innerHTML = '<i class="ti ti-presentation-analytics"></i>'; }, 1400); });
+    box.querySelector('#v-show').onclick = () => G.Present && G.Present.start(CHARTS.filter(c => CURRENT[c.id]).map(c => CURRENT[c.id]));
+    if (G.Basket) G.Basket.kpis = kpis(M).map(k => ({ l: k.l, v: k.v, c: k.c }));
+    const reportInfo = () => ({ title: (info.tplName || 'Rapor') + (info.filter ? ' · ' + info.filter.val : ''), subtitle: info.file + ' · ' + M.rows.length.toLocaleString('tr-TR') + ' satır', kpis: kpis(M),
       note: 'Kaynak: ' + info.file + (M.times.length ? ' · Dönem: ' + M.times[0] + '–' + M.times[M.times.length - 1] : '') });
     box.querySelector('#v-all-pptx').onclick = async () => {
       const b = box.querySelector('#v-all-pptx'), old = b.innerHTML; b.disabled = true; b.innerHTML = '<i class="ti ti-loader-2"></i> Hazırlanıyor…';
@@ -333,7 +349,7 @@
         const rows = raw.slice(hi + 1).map(r => { const o = {}; Object.entries(map).forEach(([k, i]) => o[k] = r[i]); return o; })
           .filter(o => Object.values(o).some(v => v !== null && v !== ''));
         const tplUsed = { ...tpl, columns: tpl.columns.filter(c => !missing.includes(c.name)) };
-        renderResult(root, buildModel(tplUsed, rows), { tplId: tpl.id, tplName: tpl.name, file: file.name, matched: total - missing.length, total, missing });
+        renderResult(root, buildModel(tplUsed, rows), { tplId: tpl.id, tplName: tpl.name, file: file.name, matched: total - missing.length, total, missing, tpl: tplUsed, rows });
       } catch (err) { console.error(err); msg.className = 'msg err'; msg.textContent = 'Dosya okunamadı. Geçerli bir Excel dosyası olduğundan emin ol.'; }
     };
     fr.readAsArrayBuffer(file);

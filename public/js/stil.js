@@ -2,6 +2,7 @@
 (function (G) {
   const PALETS = {
     'Varsayılan': null,
+    'Tema': 'theme',
     'Gece altını': ['#f2d68a', '#c9a24a', '#5fb8f0', '#3b7cb8', '#e9c46a', '#9fc7ea', '#8a6e2f', '#2e5c8a'],
     'Neon': ['#3fd0ff', '#b46bff', '#ff5fa2', '#5dffb0', '#ffd23f', '#5f7bff', '#ff8a3d', '#2ee6d6'],
     'Okyanus': ['#5fb8f0', '#2e86c1', '#76d7c4', '#1abc9c', '#a9cce3', '#21618c', '#48c9b0', '#d6eaf8'],
@@ -34,6 +35,7 @@
   function palette(s) {
     const p = PALETS[s.palette];
     if (p === 'mono') return Array.from({ length: 8 }, (_, i) => hsl(s.hue, s.sat, s.light - i * 7 + (i % 2) * 3));
+    if (p === 'theme') return (typeof window !== 'undefined' && window.__THEME_COLORS) || null;
     if (Array.isArray(p)) return p;
     return null;
   }
@@ -156,7 +158,7 @@
       <div class="dr-body">
         ${kinds ? `<div class="dr-sec"><h4>Grafik tipi</h4><div class="seg" data-seg="kind">${['', ...kinds].map(k => `<span data-v="${k}" class="${s.kind === k ? 'on' : ''}">${k || 'Orijinal'}</span>`).join('')}</div></div>` : ''}
         <div class="dr-sec"><h4>Renk</h4>
-          <div class="pals">${Object.keys(PALETS).map(n => `<button class="pal${s.palette === n ? ' on' : ''}" data-pal="${n}" title="${n}">${(PALETS[n] === 'mono' ? Array.from({ length: 4 }, (_, i) => hsl(s.hue, s.sat, s.light - i * 10)) : (PALETS[n] || ['#f2d68a', '#5fb8f0', '#5dcaa5', '#c9a24a'])).slice(0, 4).map(c => `<i style="background:${c}"></i>`).join('')}<span>${n}</span></button>`).join('')}</div>
+          <div class="pals">${Object.keys(PALETS).map(n => `<button class="pal${s.palette === n ? ' on' : ''}" data-pal="${n}" title="${n}">${(PALETS[n] === 'theme' ? ((typeof window !== 'undefined' && window.__THEME_COLORS) || ['#f2d68a', '#5fb8f0', '#5dcaa5', '#c9a24a']) : PALETS[n] === 'mono' ? Array.from({ length: 4 }, (_, i) => hsl(s.hue, s.sat, s.light - i * 10)) : (PALETS[n] || ['#f2d68a', '#5fb8f0', '#5dcaa5', '#c9a24a'])).slice(0, 4).map(c => `<i style="background:${c}"></i>`).join('')}<span>${n}</span></button>`).join('')}</div>
           <div class="mono-box" style="${s.palette === 'Tek renk (ton)' ? '' : 'display:none'}">${rng('hue', 'Renk tonu', 0, 360)}${rng('sat', 'Doygunluk', 0, 100, 1, '%')}${rng('light', 'Parlaklık', 20, 90, 1, '%')}</div>
           ${rng('gradient', 'Renk geçişi', 0, 80)}${rng('opacity', 'Saydamlık', 20, 100, 1, '%')}${rng('glow', 'Işıltı', 0, 10)}${tog('colorByData', 'Her çubuk/dilim farklı renk')}</div>
         <div class="dr-sec"><h4>Şekil</h4>${rng('radius', 'Köşe yuvarlaklığı', 0, 24)}${rng('barWidth', 'Çubuk kalınlığı', 8, 90)}${rng('lineWidth', 'Çizgi kalınlığı', 1, 8)}${rng('symbolSize', 'Nokta boyutu', 0, 16)}${tog('smooth', 'Yumuşak çizgi')}</div>

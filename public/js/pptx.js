@@ -34,9 +34,9 @@
     const t0 = ser[0] && ser[0].type;
     if (t0 === 'heatmap') {
       const xs = o.xAxis.data, ys = o.yAxis.data; const grid = ys.map(() => xs.map(() => 0)); let mx = 0;
-      ser[0].data.forEach(([x, y, v]) => { grid[y][x] = v; mx = Math.max(mx, v); });
+      ser[0].data.forEach(([x, y, v]) => { grid[y][x] = v; if (typeof v === 'number') mx = Math.max(mx, v); }); const vm = o.visualMap || {}; const mn = typeof vm.min === 'number' ? vm.min : 0; if (typeof vm.max === 'number') mx = vm.max;
       const stops = ((o.visualMap && o.visualMap.inRange && o.visualMap.inRange.color) || ['#0f1f42', '#2e5c8a', '#5fb8f0', '#f2d68a']).map(hex);
-      return { kind: 'heat', xs, ys: ys.slice().reverse(), grid: grid.slice().reverse(), mx, stops, type };
+      return { kind: 'heat', xs, ys: ys.slice().reverse(), grid: grid.slice().reverse(), mx, mn, stops, type };
     }
     if (t0 === 'gauge') return { kind: 'gauge', value: val(ser[0].data[0]), label: ser[0].data[0].name, color: hex(ser[0].progress && ser[0].progress.itemStyle && ser[0].progress.itemStyle.color) || GOLD };
     if (t0 === 'pie') {
@@ -100,7 +100,7 @@
       valAxisLabelFormatCode: sp.fmt || '#,##0' };
   }
   function addChartSlide(pptx, c, idx) {
-    const slide = pptx.addSlide(); frame(pptx, slide, c, idx);
+    const slide = pptx.addSlide(); pptx.__last = slide; frame(pptx, slide, c, idx);
     const sp = spec(c); let anim = sp.anim || 'fade';
     const legend = { showLegend: true, legendPos: 't', legendColor: TXT, legendFontSize: 11, legendFontFace: 'Segoe UI' };
     if (sp.kind === 'chart') {
@@ -133,9 +133,9 @@
       anim = 'wheel';
     } else if (sp.kind === 'heat') {
       const lerp = (a, b, t) => Math.round(parseInt(a, 16) + (parseInt(b, 16) - parseInt(a, 16)) * t).toString(16).padStart(2, '0');
-      const col = v => { const t = sp.mx ? v / sp.mx : 0, seg = Math.min(sp.stops.length - 2, Math.floor(t * (sp.stops.length - 1))), lt = t * (sp.stops.length - 1) - seg;
+      const col = v => { if (typeof v !== 'number') return BG; const t = Math.max(0, Math.min(1, sp.mx - (sp.mn || 0) ? (v - (sp.mn || 0)) / (sp.mx - (sp.mn || 0)) : 0)), seg = Math.min(sp.stops.length - 2, Math.floor(t * (sp.stops.length - 1))), lt = t * (sp.stops.length - 1) - seg;
         const A = sp.stops[seg], B = sp.stops[seg + 1]; return (lerp(A.slice(0, 2), B.slice(0, 2), lt) + lerp(A.slice(2, 4), B.slice(2, 4), lt) + lerp(A.slice(4, 6), B.slice(4, 6), lt)).toUpperCase(); };
-      const f = v => { const a = Math.abs(v); return a >= 1e6 ? (v / 1e6).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' M' : a >= 1e4 ? Math.round(v / 1e3).toLocaleString('tr-TR') + ' bin' : Math.round(v).toLocaleString('tr-TR'); };
+      const f = v => { if (typeof v !== 'number') return String(v ?? ''); if (sp.type === 'Yüzde') return '%' + v.toLocaleString('tr-TR', { maximumFractionDigits: 1 }); const a = Math.abs(v); return a >= 1e6 ? (v / 1e6).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' M' : a >= 1e4 ? Math.round(v / 1e3).toLocaleString('tr-TR') + ' bin' : Math.round(v).toLocaleString('tr-TR'); };
       const head = [{ text: '', options: { fill: { color: BG } } }].concat(sp.xs.map(x => ({ text: String(x), options: { bold: true, color: TXT, fill: { color: BG }, align: 'center' } })));
       const rows = [head].concat(sp.ys.map((y, yi) => [{ text: String(y), options: { color: WHITE, bold: true, fill: { color: BG } } }]
         .concat(sp.grid[yi].map(v => { const c2 = col(v); const dark = parseInt(c2.slice(0, 2), 16) * .3 + parseInt(c2.slice(2, 4), 16) * .59 + parseInt(c2.slice(4, 6), 16) * .11 > 150;
@@ -228,7 +228,8 @@
     const pptx = new PptxGen(); pptx.layout = 'LAYOUT_WIDE'; pptx.author = 'Excel Dashboard'; pptx.title = info ? info.title : list[0].title;
     const anims = [];
     if (info) anims.push(addCover(pptx, info));
-    list.forEach((c, i) => anims.push(addChartSlide(pptx, c, info ? (i + 1) + '/' + list.length : '')));
+    list.forEach((c, i) => { anims.push(addChartSlide(pptx, c, info ? (i + 1) + '/' + list.length : ''));
+      if (!(info && info.noNotes)) { const sl = pptx.__last; const t = [c.title, c.sub, c.notes, c.note].filter(Boolean).join('\n'); if (sl && sl.addNotes && t) sl.addNotes(t); } });
     const buf = await pptx.write({ outputType: 'arraybuffer' });
     return addAnimations(buf, anims, JSZipLib);
   }
