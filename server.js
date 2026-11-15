@@ -9,6 +9,7 @@ const PASSWORD = process.env.DASHBOARD_PASSWORD || '';
 const ROOT = path.join(__dirname, 'public');
 const LOGIN = fs.readFileSync(path.join(__dirname, 'login.html'), 'utf8');
 const SECRET = crypto.createHash('sha256').update('excel-dashboard:' + PASSWORD).digest();
+const STARTED = new Date().toISOString();
 const MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -52,6 +53,16 @@ function readBody(req, max, cb) {
   req.on('end', () => { if (over) return cb(new Error('too large')); try { cb(null, b ? JSON.parse(b) : {}); } catch (e) { cb(e); } });
 }
 function api(req, res, url) {
+  // Version & self-update
+  if (url === '/api/version') {
+    let v = 'yerel'; try { v = fs.readFileSync(path.join(__dirname, 'VERSION'), 'utf8').trim().slice(0, 7); } catch (_) {}
+    return json(res, 200, { version: v, started: STARTED });
+  }
+  if (url === '/api/update' && req.method === 'POST') {
+    json(res, 200, { ok: true });
+    console.log('Güncelleme istendi, yeniden başlatılıyor');
+    return setTimeout(() => process.exit(0), 400); // Docker (restart: unless-stopped) yeniden başlatır, start.sh yeni kodu çeker
+  }
   // Templates
   if (url === '/api/templates' && req.method === 'GET') return json(res, 200, load('templates'));
   if (url === '/api/templates' && req.method === 'POST') {

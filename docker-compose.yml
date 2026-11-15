@@ -1,7 +1,7 @@
 services:
   excel-dashboard:
     build: .
-    image: excel-dashboard:latest
+    pull_policy: build
     container_name: excel-dashboard
     restart: unless-stopped
     environment:

@@ -1,8 +1,8 @@
 FROM node:22-alpine
+RUN apk add --no-cache curl tar
 WORKDIR /app
-COPY server.js login.html ./
-COPY public ./public
-RUN mkdir -p /app/data
-ENV PORT=3000
+COPY . /app/baked
+COPY start.sh /start.sh
+ENV PORT=3000 DATA_DIR=/app/data
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["sh", "/start.sh"]
