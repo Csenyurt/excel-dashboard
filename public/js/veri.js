@@ -155,7 +155,7 @@
       return { sub: M.primary.name + ' ve aylık büyüme %', option: { ...base(), legend, xAxis: xCat(M.times),
         yAxis: [yVal(M.primary.type), yVal('Yüzde', { splitLine: { show: false } })],
         series: [{ name: M.primary.name, type: 'bar', barMaxWidth: 36, itemStyle: { borderRadius: [5, 5, 0, 0], color: grad('#5fb8f0', '#2e5c8a') }, data: a },
-          { name: 'Büyüme %', type: 'line', yAxisIndex: 1, smooth: true, symbolSize: 7, lineStyle: { width: 3, color: '#f2d68a' }, itemStyle: { color: '#f2d68a' }, data: g }] } };
+          { name: 'Büyüme %', type: 'line', yAxisIndex: 1, smooth: false, symbolSize: 7, lineStyle: { width: 3, color: '#f2d68a' }, itemStyle: { color: '#f2d68a' }, data: g }] } };
     } },
     { id: 'selale', name: 'Şelale', icon: 'ti-stairs-up', build: M => {
       const d = M.dims[1] || M.dims[0]; if (!d || !M.primary) return { need: 'bir Kırılım ve bir Ölçü sütunu' };
@@ -204,7 +204,7 @@
     M.measures.filter(m => m.type !== 'Yüzde').slice(0, 2).forEach(m => out.push({ l: 'Toplam ' + m.name, v: fmt(M.rows.reduce((s, r) => s + num(r[m.name]), 0), m.type), i: m.type === 'Para' ? 'ti-coins' : 'ti-package' }));
     if (M.targetCol && M.primary) {
       const a = M.rows.reduce((s, r) => s + num(r[M.primary.name]), 0), h = M.rows.reduce((s, r) => s + num(r[M.targetCol.name]), 0);
-      const p = h ? a / h * 100 : 0; out.push({ l: 'Hedef gerçekleşme', v: '%' + p.toLocaleString('tr-TR', { maximumFractionDigits: 1 }), i: 'ti-target-arrow', c: p >= 100 ? 'up' : 'down' });
+      const p = h ? a / h * 100 : 0; out.push({ l: 'Hedef gerçekleşme', v: '%' + p.toLocaleString('tr-TR', { maximumFractionDigits: 1 }), i: 'ti-target-arrow', c: p >= 100 ? 'up' : p >= 95 ? 'mid' : 'down' });
     }
     if (M.dims[0]) out.push({ l: M.dims[0] + ' sayısı', v: new Set(M.rows.map(r => r[M.dims[0]]).filter(Boolean)).size, i: 'ti-users' });
     if (M.times.length) out.push({ l: 'Dönem', v: M.times[0] + (M.times.length > 1 ? ' – ' + M.times[M.times.length - 1] : ''), i: 'ti-calendar' });
