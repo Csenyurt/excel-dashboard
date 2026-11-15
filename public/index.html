@@ -107,6 +107,28 @@ header p{color:var(--muted);font-size:13px;margin-top:3px}
 .empty-small{text-align:center;color:var(--muted);font-size:13px;line-height:1.8;padding:30px 10px}
 .empty-small i{font-size:28px;color:#5d7096}
 @media(max-width:1100px){.split{grid-template-columns:1fr}.grid3{grid-template-columns:1fr 1fr}}
+/* Veri page */
+.v-row{display:flex;gap:12px}
+.v-sum{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:18px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 11px;border-radius:10px;border:1px solid var(--line);color:var(--muted)}
+.pill.ok{color:#5dcaa5;border-color:rgba(93,202,165,.35)}.pill.warn{color:#f2c46a;border-color:rgba(242,196,106,.35)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:20px}
+.kpi{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:16px;background:rgba(6,16,36,.5);border:1px solid var(--panel-b);animation:rise .5s ease both}
+.kpi>i{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:21px;color:var(--gold);background:rgba(242,214,138,.1)}
+.kpi span{display:block;font-size:12px;color:var(--muted)}.kpi b{font-size:21px;font-weight:600;letter-spacing:.3px}
+.kpi b.up{color:#5dcaa5}.kpi b.down{color:#f09595}
+.cgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.ccard{background:rgba(6,16,36,.5);border:1px solid var(--panel-b);border-radius:18px;padding:16px 16px 8px;animation:rise .6s cubic-bezier(.2,.8,.2,1) both;transition:border-color .25s}
+.ccard:hover{border-color:rgba(242,214,138,.35)}
+.ccard.wide{grid-column:1/-1}
+.cc-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.cc-h b{font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px}.cc-h b i{color:var(--gold);font-size:18px}
+.cc-h small{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.cc-tools{display:flex;gap:2px}.cc-tools .icon-btn:disabled{opacity:.45;cursor:default}
+.cc-tools .icon-btn:not(:disabled):hover{color:var(--gold);border-color:rgba(242,214,138,.3)}
+.cc-body{height:320px;margin-top:6px}
+.ccard.wide .cc-body{height:380px}
+@media(max-width:1100px){.cgrid{grid-template-columns:1fr}}
 /* Tablet / narrow */
 @media(max-width:900px){
   .app{grid-template-columns:76px 1fr}
@@ -149,9 +171,11 @@ header p{color:var(--muted);font-size:13px;margin-top:3px}
   </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
 <script src="/js/sablon.js"></script>
+<script src="/js/veri.js"></script>
 <script>
-const RENDER={sablon:r=>renderSablon(r)};
+const RENDER={sablon:r=>renderSablon(r),veri:r=>renderVeri(r)};
 const TABS={
   sablon:{t:"Şablon Excel giriş",d:"Boş şablonları yükle, sütunları tanıt ve kaydet",i:"ti-file-spreadsheet",s:2},
   veri:{t:"Veri dolu Excel giriş",d:"Dolu dosyayı yükle, 12 hazır grafik otomatik oluşsun",i:"ti-table-import",s:2},
