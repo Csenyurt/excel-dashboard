@@ -11,6 +11,21 @@
     'Grafit': ['#eaf0fa', '#b5c3dc', '#7f93b8', '#5d7096', '#9fb0cf', '#40537a', '#c9d4e8', '#2c3a59'],
     'Tek renk (ton)': 'mono'
   };
+  // 30 animasyon: hareket eğrisi (e) + sıralama deseni (d) + hız çarpanı (k)
+  const rnd = i => ((i * 9301 + 49297) % 233280) / 233280;
+  const D = { none: null, seq: i => i * 80, rev: i => Math.max(0, 11 - i) * 80, rand: i => rnd(i) * 600, center: i => Math.abs(i - 5.5) * 90,
+    wave: i => (Math.sin(i * .9) + 1) * 260, domino: i => i * 130, stairs: i => Math.floor(i / 3) * 220, fast: i => i * 35 };
+  const ANIMS = [
+    ['Yükselme', 'cubicOut'], ['Yumuşak yükselme', 'sinusoidalOut'], ['Hızlı başlangıç', 'exponentialOut'], ['Ağır çekim', 'quinticInOut', 'none', 1.8],
+    ['Sırayla', 'cubicOut', 'seq'], ['Tersten sırayla', 'cubicOut', 'rev'], ['Rastgele', 'cubicOut', 'rand'], ['Ortadan dışa', 'quarticOut', 'center'],
+    ['Dalga', 'sinusoidalOut', 'wave'], ['Zıplama', 'elasticOut'], ['Yaylanma', 'backOut'], ['Top sekmesi', 'bounceOut'],
+    ['Sırayla zıplama', 'elasticOut', 'seq'], ['Sırayla sekme', 'bounceOut', 'seq'], ['Sırayla yaylanma', 'backOut', 'seq'], ['Doğrusal', 'linear'],
+    ['Hızlanarak', 'cubicIn'], ['Yavaşlayarak', 'quarticOut'], ['Dairesel', 'circularOut'], ['Kademeli', 'quadraticInOut', 'stairs'],
+    ['Patlama', 'backOut', 'none', .55, true], ['Şimşek', 'exponentialOut', 'fast', .45], ['Süzülme', 'sinusoidalInOut', 'none', 2], ['Elastik dalga', 'elasticOut', 'wave'],
+    ['Domino', 'linear', 'domino'], ['Yağmur', 'bounceOut', 'rand'], ['Nefes', 'sinusoidalInOut', 'center', 1.4, true], ['Kuyruklu yıldız', 'circularOut', 'rev', 1.2],
+    ['Soluklaşma', 'linear', 'none', 1.3], ['Yok']
+  ].map(([n, e, d, k, pieScale]) => ({ n, e, d: D[d || 'none'], k: k || 1, pieScale: !!pieScale }));
+  const ANIM = Object.fromEntries(ANIMS.map(a => [a.n, a]));
   const DEF = { palette: 'Varsayılan', hue: 42, sat: 80, light: 70, gradient: 40, opacity: 100, glow: 0, colorByData: false,
     radius: 6, barWidth: 44, lineWidth: 3, smooth: true, symbolSize: 7, labels: true, grid: true, legend: true, fontSize: 12,
     topN: 0, sort: 'desc', anim: 'Yükselme', speed: 900, kind: '', title: '', sub: '' };
@@ -109,11 +124,13 @@
     if (o.radar) o.radar.axisName = Object.assign({}, o.radar.axisName, { fontSize: s.fontSize });
     o.textStyle = Object.assign({}, o.textStyle, { fontSize: s.fontSize });
     // animation
-    if (s.anim === 'Yok') o.animation = false;
+    const A = ANIM[s.anim] || ANIM['Yükselme'];
+    if (A.n === 'Yok') o.animation = false;
     else {
-      o.animation = true; o.animationDuration = s.speed; o.animationDurationUpdate = Math.min(600, s.speed);
-      o.animationEasing = s.anim === 'Zıplama' ? 'elasticOut' : s.anim === 'Soluklaşma' ? 'linear' : 'cubicOut';
-      o.animationDelay = s.anim === 'Sırayla' ? (idx => idx * Math.max(40, s.speed / 12)) : 0;
+      const dur = Math.round(s.speed * A.k), f = s.speed / 900;
+      o.animation = true; o.animationDuration = dur; o.animationDurationUpdate = Math.min(600, dur); o.animationEasing = A.e;
+      o.animationDelay = A.d ? (idx => Math.round(A.d(idx) * f)) : 0;
+      series.forEach(x => { if (x.type === 'pie') x.animationType = A.pieScale ? 'scale' : 'expansion'; x.animationEasing = A.e; });
     }
     return o;
   }
@@ -151,7 +168,7 @@
           <label class="dr-f"><span>Sıralama</span>${sel('sort', ['desc', 'asc', 'alpha'])}</label>
           ${rng('topN', 'Gösterilecek kalem (0 = otomatik)', 0, 20)}</div>
         <div class="dr-sec"><h4>Hareket</h4>
-          <label class="dr-f"><span>Animasyon</span>${sel('anim', ['Yükselme', 'Sırayla', 'Zıplama', 'Soluklaşma', 'Yok'])}</label>
+          <label class="dr-f"><span>Animasyon (30 seçenek)</span>${sel('anim', ANIMS.map(a => a.n))}</label>
           ${rng('speed', 'Hız (ms)', 200, 3000, 100)}<button class="btn ghost" id="dr-play" style="width:100%;justify-content:center;margin-top:6px"><i class="ti ti-player-play"></i> Animasyonu oynat</button></div>
       </div>
       <div class="dr-foot"><span class="msg" id="dr-msg"></span>
@@ -176,5 +193,5 @@
     requestAnimationFrame(() => d.classList.add('open'));
   }
   if (typeof document !== 'undefined') document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
-  G.Stil = { applyStyle, open, close, DEF, kindGroup };
+  G.Stil = { applyStyle, open, close, DEF, kindGroup, ANIMS };
 })(typeof window !== 'undefined' ? window : globalThis);
