@@ -11,5 +11,4 @@ if curl -fsSL --max-time 60 -o /tmp/src.tgz "https://codeload.github.com/$REPO/t
 else
   echo "GitHub'a ulaşılamadı, son kopya kullanılıyor"
 fi
-if [ -f "$CODE/server.js" ]; then cd "$CODE"; else cd /app/baked; fi
-exec node server.js
+cd "$CODE" && exec node server.js
