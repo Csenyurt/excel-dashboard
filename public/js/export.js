@@ -85,7 +85,7 @@
       <button data-f="png"><i class="ti ti-photo"></i><div>PNG olarak indir<small>Görsel · e-posta, WhatsApp</small></div></button>
       <button data-f="pdf"><i class="ti ti-file-type-pdf"></i><div>PDF olarak indir<small>Yazdırma ve paylaşım</small></div></button>
       <hr>
-      <button data-f="pptx" disabled><i class="ti ti-presentation"></i><div>PPTX · düzenlenebilir + animasyonlu<small>Sıradaki adımda geliyor</small></div></button>
+      <button data-f="pptx"><i class="ti ti-presentation"></i><div>PPTX · düzenlenebilir + animasyonlu<small>PowerPoint'te değiştirilebilir grafik</small></div></button>
       <button data-f="video" disabled><i class="ti ti-movie"></i><div>PPTX · video olarak<small>Sıradaki adımda geliyor</small></div></button>
       <div class="dl-msg"></div>`;
     document.body.appendChild(menu);
@@ -94,7 +94,7 @@
     menu.style.left = Math.max(10, r.right - menu.offsetWidth) + 'px';
     menu.querySelectorAll('button[data-f]:not([disabled])').forEach(b => b.onclick = async () => {
       const m = menu.querySelector('.dl-msg'); m.textContent = 'Hazırlanıyor…';
-      try { const c = getChart(); if (b.dataset.f === 'png') await png(c); else await pdf(c); m.textContent = 'İndirildi ✓'; setTimeout(closeMenu, 700); }
+      try { const c = getChart(); if (b.dataset.f === 'png') await png(c); else if (b.dataset.f === 'pptx') await G.PptExport.save([c]); else await pdf(c); m.textContent = 'İndirildi ✓'; setTimeout(closeMenu, 700); }
       catch (e) { console.error(e); m.textContent = 'Bir sorun oluştu, tekrar dene.'; }
     });
   }
