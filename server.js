@@ -81,6 +81,17 @@ function api(req, res, url) {
       list.unshift(item); save('templates', list); json(res, 201, item);
     });
   }
+  // Chart styles: { "<templateId>:<chartId>": {...}, "<templateId>:*": {...} }
+  if (url === '/api/styles' && req.method === 'GET') { const s = load('styles'); return json(res, 200, Array.isArray(s) ? {} : s); }
+  if (url === '/api/styles' && req.method === 'PUT') {
+    return readBody(req, 2e5, (err, b) => {
+      if (err || !b || typeof b.key !== 'string' || b.key.length > 120) return json(res, 400, { error: 'Geçersiz' });
+      let s = load('styles'); if (Array.isArray(s)) s = {};
+      if (b.style === null) delete s[b.key]; else s[b.key] = b.style;
+      if (b.clearPrefix) Object.keys(s).forEach(k => { if (k.startsWith(b.clearPrefix) && k !== b.key) delete s[k]; });
+      save('styles', s); json(res, 200, { ok: true });
+    });
+  }
   const m = url.match(/^\/api\/templates\/([a-f0-9]+)$/);
   if (m && req.method === 'DELETE') {
     const list = load('templates').filter(t => t.id !== m[1]); save('templates', list); return json(res, 200, { ok: true });

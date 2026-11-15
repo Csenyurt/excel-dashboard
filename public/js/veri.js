@@ -66,11 +66,14 @@
     rows.forEach(r => { const k = keyFn(r); if (k === null || k === undefined || k === '') return; m.set(k, (m.get(k) || 0) + num(r[valCol])); });
     return m;
   }
+  let CUR = {}; // settings of the chart being built
   function topN(map, n, other) {
-    const arr = [...map.entries()].sort((a, b) => b[1] - a[1]);
-    if (arr.length <= n) return arr;
-    const head = arr.slice(0, n), rest = arr.slice(n).reduce((s, x) => s + x[1], 0);
-    return other ? head.concat([['Diğer', rest]]) : head;
+    if (CUR.topN > 0) n = CUR.topN;
+    let arr = [...map.entries()].sort((a, b) => b[1] - a[1]);
+    if (arr.length > n) { const head = arr.slice(0, n), rest = arr.slice(n).reduce((s, x) => s + x[1], 0); arr = other ? head.concat([['Diğer', rest]]) : head; }
+    if (CUR.sort === 'asc') arr.sort((a, b) => a[1] - b[1]);
+    else if (CUR.sort === 'alpha') arr.sort((a, b) => String(a[0]).localeCompare(String(b[0]), 'tr'));
+    return arr;
   }
 
   // ---------- common chart styling ----------
@@ -212,12 +215,20 @@
   }
 
   // ---------- page ----------
-  let charts = [], ro = null;
+  let charts = [], ro = null, STYLES = {};
+  async function loadStyles() { try { STYLES = await (await fetch('/api/styles')).json() || {}; } catch (_) { STYLES = {}; } }
+  async function putStyle(key, style) {
+    if (style === null) delete STYLES[key]; else STYLES[key] = style;
+    try { await fetch('/api/styles', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, style }) }); } catch (_) {}
+  }
   function disposeCharts() { charts.forEach(c => c.dispose && c.dispose()); charts = []; }
 
   function renderResult(root, M, info) {
     const box = root.querySelector('#v-result');
-    const built = CHARTS.map(c => { let r; try { r = c.build(M); } catch (e) { r = { need: 'uygun veri' }; console.error(c.id, e); } return { ...c, ...r }; });
+    const styleOf = id => Object.assign({}, STYLES[info.tplId + ':*'] || {}, STYLES[info.tplId + ':' + id] || {});
+    const make = (c, st) => { let r; CUR = st || {}; try { r = c.build(M); } catch (e) { r = { need: 'uygun veri' }; console.error(c.id, e); } CUR = {};
+      if (r.option && G.Stil) r.option = G.Stil.applyStyle(r.option, st); return { ...c, ...r, style: st }; };
+    const built = CHARTS.map(c => make(c, styleOf(c.id)));
     box.innerHTML = `
       <div class="v-sum"><span class="filechip"><i class="ti ti-file-spreadsheet"></i>${esc(info.file)}</span>
         <span class="pill"><i class="ti ti-rows"></i>${M.rows.length.toLocaleString('tr-TR')} satır</span>
@@ -226,14 +237,35 @@
         <button class="btn ghost" id="v-reset" style="margin-left:auto"><i class="ti ti-upload"></i> Başka dosya</button></div>
       <div class="kpis">${kpis(M).map(k => `<div class="kpi"><i class="ti ${k.i}"></i><div><span>${esc(k.l)}</span><b class="${k.c || ''}">${esc(k.v)}</b></div></div>`).join('')}</div>
       <div class="cgrid">${built.map((c, i) => `<div class="ccard${c.wide ? ' wide' : ''}" style="animation-delay:${i * 60}ms">
-        <div class="cc-h"><div><b><i class="ti ${c.icon}"></i> ${esc(c.name)}</b><small>${esc(c.need ? 'Bu grafik için ' + c.need + ' gerekli' : c.sub)}</small></div>
-          <div class="cc-tools"><button class="icon-btn" title="Görünüm ayarları (yakında)" disabled><i class="ti ti-adjustments"></i></button><button class="icon-btn" title="İndir: PNG · PDF · PPTX (3. adımda)" disabled><i class="ti ti-download"></i></button></div></div>
+        <div class="cc-h"><div><b><i class="ti ${c.icon}"></i> <span class="cc-t">${esc(c.style.title || c.name)}</span></b><small class="cc-s">${esc(c.need ? 'Bu grafik için ' + c.need + ' gerekli' : (c.style.sub || c.sub))}</small></div>
+          <div class="cc-tools"><button class="icon-btn gear" data-gear="${c.id}" title="Görünüm ayarları"${c.need ? ' disabled' : ''}><i class="ti ti-adjustments"></i></button><button class="icon-btn" title="İndir: PNG · PDF · PPTX (3. adımda)" disabled><i class="ti ti-download"></i></button></div></div>
         <div class="cc-body" id="ch-${c.id}">${c.need ? '<div class="empty-small"><i class="ti ti-chart-dots-3"></i><br>Şablonda gerekli sütun yok</div>' : ''}</div></div>`).join('')}</div>`;
-    box.querySelector('#v-reset').onclick = () => { disposeCharts(); box.innerHTML = ''; root.querySelector('#v-setup').style.display = ''; };
+    box.querySelector('#v-reset').onclick = () => { if (G.Stil) G.Stil.close(); disposeCharts(); box.innerHTML = ''; root.querySelector('#v-setup').style.display = ''; };
     root.querySelector('#v-setup').style.display = 'none';
     disposeCharts();
     if (typeof echarts === 'undefined') { box.querySelectorAll('.cc-body').forEach(b => b.innerHTML = '<div class="empty-small">Grafik kütüphanesi yüklenemedi, sayfayı yenile.</div>'); return; }
-    built.forEach(c => { if (c.need) return; const el = box.querySelector('#ch-' + c.id); const ch = echarts.init(el, null, { renderer: 'canvas' }); ch.setOption(c.option); charts.push(ch); });
+    const byId = {};
+    built.forEach(c => { if (c.need) return; const el = box.querySelector('#ch-' + c.id); const ch = echarts.init(el, null, { renderer: 'canvas' }); ch.setOption(c.option); charts.push(ch); byId[c.id] = ch; });
+    box.querySelectorAll('[data-gear]').forEach(btn => btn.onclick = () => {
+      const c = CHARTS.find(x => x.id === btn.dataset.gear), card = btn.closest('.ccard'), ch = byId[c.id];
+      const cur = built.find(x => x.id === c.id);
+      const redraw = st => { const r = make(c, st); if (r.option) ch.setOption(r.option, true);
+        card.querySelector('.cc-t').textContent = st.title || c.name; card.querySelector('.cc-s').textContent = st.sub || r.sub || ''; return r; };
+      box.querySelectorAll('.ccard').forEach(x => x.classList.toggle('editing', x === card));
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      G.Stil.open({ name: c.name, sub: cur.sub, style: styleOf(c.id), kindGroup: G.Stil.kindGroup(cur.option),
+        onChange: st => redraw(st),
+        onPlay: st => { ch.clear(); redraw(st); },
+        onSave: async (st, all) => {
+          if (all) {
+            await putStyle(info.tplId + ':*', st);
+            for (const k of Object.keys(STYLES)) if (k.startsWith(info.tplId + ':') && !k.endsWith(':*')) { const v = STYLES[k]; await putStyle(k, (v.title || v.sub || v.kind) ? { title: v.title, sub: v.sub, kind: v.kind } : null); }
+            renderResult(root, M, info);
+          } else await putStyle(info.tplId + ':' + c.id, st);
+        },
+        onReset: async () => { await putStyle(info.tplId + ':' + c.id, null); redraw(styleOf(c.id)); card.classList.remove('editing'); }
+      });
+    });
     if (ro) ro.disconnect(); ro = new ResizeObserver(() => charts.forEach(c => c.resize())); ro.observe(box);
     G.__lastModel = M;
   }
@@ -263,14 +295,14 @@
         const rows = raw.slice(hi + 1).map(r => { const o = {}; Object.entries(map).forEach(([k, i]) => o[k] = r[i]); return o; })
           .filter(o => Object.values(o).some(v => v !== null && v !== ''));
         const tplUsed = { ...tpl, columns: tpl.columns.filter(c => !missing.includes(c.name)) };
-        renderResult(root, buildModel(tplUsed, rows), { file: file.name, matched: total - missing.length, total, missing });
+        renderResult(root, buildModel(tplUsed, rows), { tplId: tpl.id, file: file.name, matched: total - missing.length, total, missing });
       } catch (err) { console.error(err); msg.className = 'msg err'; msg.textContent = 'Dosya okunamadı. Geçerli bir Excel dosyası olduğundan emin ol.'; }
     };
     fr.readAsArrayBuffer(file);
   }
 
   G.renderVeri = async function (root) {
-    disposeCharts();
+    disposeCharts(); await loadStyles();
     root.innerHTML = `<div id="v-setup"><section class="panel"><div class="ph"><i class="ti ti-table-import"></i> Veri yükle</div><div id="v-step"></div><span class="msg" id="v-msg"></span></section></div><div id="v-result"></div>`;
     const step = root.querySelector('#v-step');
     let list = []; try { list = await (await fetch('/api/templates')).json(); } catch (_) {}
