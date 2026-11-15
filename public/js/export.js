@@ -86,7 +86,7 @@
       <button data-f="pdf"><i class="ti ti-file-type-pdf"></i><div>PDF olarak indir<small>Yazdırma ve paylaşım</small></div></button>
       <hr>
       <button data-f="pptx"><i class="ti ti-presentation"></i><div>PPTX · düzenlenebilir + animasyonlu<small>PowerPoint'te değiştirilebilir grafik</small></div></button>
-      <button data-f="video" disabled><i class="ti ti-movie"></i><div>PPTX · video olarak<small>Sıradaki adımda geliyor</small></div></button>
+      <button data-f="video"><i class="ti ti-movie"></i><div>PPTX · video olarak<small>Dashboard'daki hareketin aynısı</small></div></button>
       <div class="dl-msg"></div>`;
     document.body.appendChild(menu);
     const r = btn.getBoundingClientRect();
@@ -94,9 +94,44 @@
     menu.style.left = Math.max(10, r.right - menu.offsetWidth) + 'px';
     menu.querySelectorAll('button[data-f]:not([disabled])').forEach(b => b.onclick = async () => {
       const m = menu.querySelector('.dl-msg'); m.textContent = 'Hazırlanıyor…';
-      try { const c = getChart(); if (b.dataset.f === 'png') await png(c); else if (b.dataset.f === 'pptx') await G.PptExport.save([c]); else await pdf(c); m.textContent = 'İndirildi ✓'; setTimeout(closeMenu, 700); }
+      try { const c = getChart(); if (b.dataset.f === 'png') await png(c); else if (b.dataset.f === 'pptx') await G.PptExport.save([c]); else if (b.dataset.f === 'video') { m.textContent = 'Video kaydediliyor…'; await G.PptExport.saveVideo([c], null, () => {}); } else await pdf(c); m.textContent = 'İndirildi ✓'; setTimeout(closeMenu, 700); }
       catch (e) { console.error(e); m.textContent = 'Bir sorun oluştu, tekrar dene.'; }
     });
   }
-  G.Export = { openMenu, pdfAll, png, pdf, closeMenu };
+  // ---------- video recording (MP4) ----------
+  function videoMime() {
+    const list = ['video/mp4;codecs=avc1.42E01E', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'];
+    return (typeof MediaRecorder !== 'undefined' && list.find(t => MediaRecorder.isTypeSupported(t))) || null;
+  }
+  async function recordVideo(c) {
+    const mime = videoMime(); if (!mime) throw new Error('Bu tarayıcı video kaydedemiyor');
+    const cw = W - 160, chh = H - 270;
+    const el = document.createElement('div'); el.style.cssText = `position:fixed;left:-99999px;top:0;width:${cw}px;height:${chh}px`;
+    document.body.appendChild(el);
+    const ch = echarts.init(el, null, { renderer: 'canvas', width: cw, height: chh, devicePixelRatio: 1.5 });
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const ctx = cv.getContext('2d');
+    // static layer (background, texts) drawn once
+    const st = document.createElement('canvas'); st.width = W; st.height = H; const sx = st.getContext('2d'); bg(sx);
+    sx.textBaseline = 'top'; sx.fillStyle = '#eaf0fa'; sx.font = '600 38px "Segoe UI", system-ui, sans-serif'; sx.fillText(wrapText(sx, c.title, W - 200), 88, 62);
+    sx.fillStyle = '#9fb0cf'; sx.font = '22px "Segoe UI", system-ui, sans-serif'; sx.fillText(wrapText(sx, c.sub || '', W - 200), 88, 110);
+    sx.fillStyle = 'rgba(120,160,230,.18)'; sx.fillRect(80, H - 82, W - 160, 1);
+    sx.fillStyle = '#7f93b8'; sx.font = '18px "Segoe UI", system-ui, sans-serif'; sx.fillText(wrapText(sx, c.note || '', W - 360), 80, H - 64);
+    sx.textAlign = 'right'; sx.fillStyle = '#c9a24a'; sx.fillText('Excel Dashboard', W - 80, H - 64);
+    const draw = () => { ctx.drawImage(st, 0, 0); const src = el.querySelector('canvas'); if (src) ctx.drawImage(src, 80, 168, cw, chh); };
+    draw();
+    const stream = cv.captureStream(30); const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8e6 });
+    const parts = []; rec.ondataavailable = e => e.data.size && parts.push(e.data);
+    const done = new Promise(r => rec.onstop = r);
+    rec.start(200);
+    const o = c.option, dur = (o.animation === false ? 0 : (o.animationDuration || 900)) + 600 + (typeof o.animationDelay === 'function' ? o.animationDelay(12) : 0);
+    await new Promise(r => setTimeout(r, 400)); // short intro on empty background
+    ch.setOption(Object.assign({}, o, o.animation === false ? { animation: true, animationDuration: 900 } : {}));
+    const t0 = performance.now();
+    await new Promise(res => { const tick = () => { draw(); if (performance.now() - t0 < dur + 1800) requestAnimationFrame(tick); else res(); }; requestAnimationFrame(tick); });
+    draw(); const poster = cv.toDataURL('image/png');
+    rec.stop(); await done; ch.dispose(); el.remove();
+    const blob = new Blob(parts, { type: mime.split(';')[0] });
+    return { blob, mime: mime.split(';')[0], ext: mime.includes('mp4') ? 'mp4' : 'webm', poster, seconds: (dur + 2200) / 1000 };
+  }
+  G.Export = { openMenu, pdfAll, png, pdf, closeMenu, recordVideo, videoMime };
 })(typeof window !== 'undefined' ? window : globalThis);

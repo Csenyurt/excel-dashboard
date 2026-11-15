@@ -239,5 +239,56 @@
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = slug(info ? info.title + '-rapor' : list[0].title) + '.pptx';
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   }
-  G.PptExport = { build, save, spec, timingXml };
+  // ---------- video deck ----------
+  function videoTiming(spid, ms) {
+    return `<p:timing><p:tnLst><p:par><p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot"><p:childTnLst>`
+      + `<p:seq concurrent="1" nextAc="seek"><p:cTn id="2" dur="indefinite" nodeType="mainSeq"><p:childTnLst>`
+      + `<p:par><p:cTn id="3" fill="hold"><p:stCondLst><p:cond delay="indefinite"/><p:cond evt="onBegin" delay="0"><p:tn val="2"/></p:cond></p:stCondLst><p:childTnLst>`
+      + `<p:par><p:cTn id="4" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst>`
+      + `<p:par><p:cTn id="5" presetID="1" presetClass="mediacall" presetSubtype="0" fill="hold" nodeType="afterEffect"><p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst>`
+      + `<p:cmd type="call" cmd="playFrom(0.0)"><p:cBhvr><p:cTn id="6" dur="${Math.round(ms)}" fill="hold"/><p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl></p:cBhvr></p:cmd>`
+      + `</p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par>`
+      + `</p:childTnLst></p:cTn><p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst><p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst></p:seq>`
+      + `<p:video><p:cMediaNode vol="80000"><p:cTn id="7" fill="hold" display="0"><p:stCondLst><p:cond delay="indefinite"/></p:stCondLst></p:cTn><p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl></p:cMediaNode></p:video>`
+      + `</p:childTnLst></p:cTn></p:par></p:tnLst></p:timing>`;
+  }
+  const toB64 = blob => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(blob); });
+  async function buildVideo(list, info, onProgress, opts) {
+    const PptxGen = opts && opts.PptxGenJS || G.PptxGenJS, JSZipLib = opts && opts.JSZip || G.JSZip;
+    const rec = opts && opts.record || G.Export.recordVideo;
+    const pptx = new PptxGen(); pptx.layout = 'LAYOUT_WIDE'; pptx.author = 'Excel Dashboard'; pptx.title = info ? info.title : list[0].title;
+    const anims = [], durs = [];
+    if (info) { anims.push(addCover(pptx, info)); durs.push(0); }
+    for (let i = 0; i < list.length; i++) {
+      onProgress && onProgress(i + 1, list.length);
+      const v = await rec(list[i]);
+      const s = pptx.addSlide(); s.background = { color: BG };
+      let data = await toB64(v.blob); data = data.replace(/^data:[^;]+/, 'data:' + v.mime);
+      s.addMedia({ type: 'video', data, extn: v.ext, cover: v.poster, x: 0, y: 0, w: 13.333, h: 7.5 });
+      anims.push('video'); durs.push(v.seconds * 1000);
+    }
+    const buf = await pptx.write({ outputType: 'arraybuffer' });
+    const zip = await JSZipLib.loadAsync(buf);
+    for (let i = 0; i < anims.length; i++) {
+      const path = `ppt/slides/slide${i + 1}.xml`; const f = zip.file(path); if (!f) continue;
+      let xml = await f.async('string');
+      if (anims[i] === 'video') {
+        const m = xml.match(/<p:pic>[\s\S]*?<p:cNvPr id="(\d+)"[\s\S]*?<a:videoFile/); if (!m) continue;
+        xml = xml.replace(/<p:timing>[\s\S]*?<\/p:timing>/, '').replace('</p:sld>', '<p:transition spd="med"><p:fade/></p:transition>' + videoTiming(m[1], durs[i]) + '</p:sld>');
+      } else {
+        const t = idOf(xml, 'baslik'), st = idOf(xml, 'altbaslik'); const steps = [];
+        if (t) steps.push({ spid: t, eff: 'fade', dur: 500, at: 0 }); if (st) steps.push({ spid: st, eff: 'fade', dur: 400, at: 150 });
+        if (steps.length) xml = xml.replace('</p:sld>', '<p:transition spd="med"><p:fade/></p:transition>' + timingXml(steps) + '</p:sld>');
+      }
+      zip.file(path, xml);
+    }
+    return zip.generateAsync({ type: 'uint8array', compression: 'STORE' });
+  }
+  async function saveVideo(list, info, onProgress) {
+    const bytes = await buildVideo(list, info, onProgress);
+    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = slug(info ? info.title + '-rapor-video' : list[0].title + '-video') + '.pptx';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+  G.PptExport = { build, save, spec, timingXml, buildVideo, saveVideo };
 })(typeof window !== 'undefined' ? window : globalThis);

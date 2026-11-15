@@ -243,6 +243,7 @@
         <span class="pill ${info.missing.length ? 'warn' : 'ok'}"><i class="ti ti-${info.missing.length ? 'alert-triangle' : 'circle-check'}"></i>${info.matched}/${info.total} sütun eşleşti</span>
         ${info.missing.length ? `<span class="pill warn" title="${esc(info.missing.join(', '))}">Eksik: ${esc(info.missing.slice(0, 3).join(', '))}${info.missing.length > 3 ? '…' : ''}</span>` : ''}
         <button class="btn ghost" id="v-reset" style="margin-left:auto"><i class="ti ti-upload"></i> Başka dosya</button>
+        <button class="btn" id="v-all-video"><i class="ti ti-movie"></i> Rapor PPTX (video)</button>
         <button class="btn" id="v-all-pptx"><i class="ti ti-presentation"></i> Rapor PPTX</button>
         <button class="btn gold" id="v-all"><i class="ti ti-file-type-pdf"></i> Rapor PDF</button></div>
       <div class="kpis">${kpis(M).map(k => `<div class="kpi"><i class="ti ${k.i}"></i><div><span>${esc(k.l)}</span><b class="${k.c || ''}">${esc(k.v)}</b></div></div>`).join('')}</div>
@@ -285,6 +286,12 @@
     box.querySelector('#v-all-pptx').onclick = async () => {
       const b = box.querySelector('#v-all-pptx'), old = b.innerHTML; b.disabled = true; b.innerHTML = '<i class="ti ti-loader-2"></i> Hazırlanıyor…';
       try { await G.PptExport.save(CHARTS.filter(c => CURRENT[c.id]).map(c => CURRENT[c.id]), reportInfo()); } catch (err) { console.error(err); alert('Sunum oluşturulamadı.'); }
+      b.innerHTML = old; b.disabled = false;
+    };
+    box.querySelector('#v-all-video').onclick = async () => {
+      const b = box.querySelector('#v-all-video'), old = b.innerHTML; b.disabled = true;
+      try { await G.PptExport.saveVideo(CHARTS.filter(c => CURRENT[c.id]).map(c => CURRENT[c.id]), reportInfo(), (i, n) => b.innerHTML = '<i class="ti ti-loader-2"></i> Video kaydediliyor ' + i + '/' + n); }
+      catch (err) { console.error(err); alert('Video sunum oluşturulamadı: ' + err.message); }
       b.innerHTML = old; b.disabled = false;
     };
     box.querySelector('#v-all').onclick = async () => {
