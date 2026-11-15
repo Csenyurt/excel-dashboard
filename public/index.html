@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Excel Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{
+  --bg:#060d1f; --bg2:#0a1630; --panel:rgba(18,34,70,.55); --panel-b:rgba(120,160,230,.18);
+  --gold:#f2d68a; --gold2:#c9a24a; --neon:#5fb8f0; --text:#eaf0fa; --muted:#8fa2c4; --line:rgba(120,160,230,.12);
+  --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--text);background:var(--bg);overflow:hidden}
+#sky{position:fixed;inset:0;z-index:0;background:
+  radial-gradient(1200px 700px at 85% -10%,rgba(95,184,240,.16),transparent 60%),
+  radial-gradient(900px 600px at -10% 110%,rgba(201,162,74,.14),transparent 60%),
+  linear-gradient(160deg,#060d1f 0%,#0a1630 55%,#050a18 100%)}
+canvas#stars{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.55}
+.app{position:relative;z-index:1;display:grid;grid-template-columns:270px 1fr;height:100vh}
+/* Sidebar */
+aside{padding:22px 16px;display:flex;flex-direction:column;gap:6px;background:rgba(6,13,31,.55);backdrop-filter:blur(14px);border-right:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px;padding:6px 10px 22px}
+.logo{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(145deg,#f2d68a,#9c7a2e);color:#1a1405;font-size:22px;box-shadow:0 0 22px rgba(242,214,138,.35)}
+.brand b{display:block;font-size:16px;letter-spacing:.4px}
+.brand small{color:var(--muted);font-size:11px;letter-spacing:1.5px;text-transform:uppercase}
+.navlbl{font-size:10px;letter-spacing:2px;color:#5d7096;text-transform:uppercase;padding:10px 12px 6px}
+.tab{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;color:#b5c3dc;cursor:pointer;font-size:14px;border:1px solid transparent;transition:.25s;position:relative}
+.tab i{font-size:20px;color:#7f93b8;transition:.25s}
+.tab:hover{background:rgba(95,184,240,.07);color:#fff}
+.tab:hover i{color:var(--neon)}
+.tab.on{background:linear-gradient(90deg,rgba(242,214,138,.14),rgba(242,214,138,.02));border-color:rgba(242,214,138,.35);color:var(--gold)}
+.tab.on i{color:var(--gold);filter:drop-shadow(0 0 6px rgba(242,214,138,.6))}
+.tab.on::before{content:"";position:absolute;left:-16px;top:10px;bottom:10px;width:3px;border-radius:3px;background:var(--gold);box-shadow:0 0 12px var(--gold)}
+.side-foot{margin-top:auto;padding:14px;border-radius:12px;background:var(--panel);border:1px solid var(--panel-b);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:10px}
+.dot{width:8px;height:8px;border-radius:50%;background:#5dcaa5;box-shadow:0 0 10px #5dcaa5}
+/* Main */
+main{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 34px;border-bottom:1px solid var(--line)}
+header h1{font-size:24px;font-weight:600;letter-spacing:.3px}
+header p{color:var(--muted);font-size:13px;margin-top:3px}
+.clockbox{display:flex;align-items:center;gap:16px;padding:8px 18px 8px 8px;border-radius:40px;background:var(--panel);border:1px solid var(--panel-b);backdrop-filter:blur(10px)}
+.digital b{display:block;font-size:24px;font-weight:600;color:var(--gold);letter-spacing:1px;font-variant-numeric:tabular-nums}
+.digital small{color:var(--muted);font-size:11px}
+.content{flex:1;overflow:auto;padding:30px 34px}
+.stage{min-height:100%;border-radius:22px;border:1px solid var(--panel-b);background:var(--panel);backdrop-filter:blur(16px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 30px 80px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:40px;position:relative;overflow:hidden}
+.stage::after{content:"";position:absolute;inset:0;border-radius:22px;pointer-events:none;background:linear-gradient(120deg,rgba(255,255,255,.06),transparent 30%)}
+.empty{text-align:center;max-width:460px;animation:rise .6s cubic-bezier(.2,.8,.2,1)}
+.empty .ic{width:88px;height:88px;margin:0 auto 22px;border-radius:24px;display:grid;place-items:center;font-size:42px;color:var(--gold);
+  background:radial-gradient(circle at 30% 30%,rgba(242,214,138,.25),rgba(242,214,138,.04));border:1px solid rgba(242,214,138,.3);box-shadow:0 0 40px rgba(242,214,138,.15)}
+.empty h2{font-size:22px;font-weight:600;margin-bottom:10px}
+.empty p{color:var(--muted);font-size:14px;line-height:1.7}
+.badge{display:inline-flex;align-items:center;gap:6px;margin-top:20px;font-size:12px;padding:6px 14px;border-radius:20px;color:var(--neon);border:1px solid rgba(95,184,240,.35);background:rgba(95,184,240,.08)}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+/* Tablet / narrow */
+@media(max-width:900px){
+  .app{grid-template-columns:76px 1fr}
+  .brand div,.tab span,.navlbl,.side-foot span{display:none}
+  .tab{justify-content:center;padding:14px}
+  .tab.on::before{left:-16px}
+  .side-foot{justify-content:center}
+  header{padding:16px 20px}.content{padding:20px}
+  .digital small{display:none}
+}
+</style>
+</head>
+<body>
+<div id="sky"></div><canvas id="stars"></canvas>
+<div class="app">
+  <aside>
+    <div class="brand"><div class="logo"><i class="ti ti-chart-arcs"></i></div><div><b>Excel Dashboard</b><small>Komuta merkezi</small></div></div>
+    <div class="navlbl">Veri</div>
+    <div class="tab on" data-id="sablon"><i class="ti ti-file-spreadsheet"></i><span>Şablon Excel giriş</span></div>
+    <div class="tab" data-id="veri"><i class="ti ti-table-import"></i><span>Veri dolu Excel giriş</span></div>
+    <div class="tab" data-id="nielsen"><i class="ti ti-chart-dots-3"></i><span>Nielsen giriş</span></div>
+    <div class="navlbl">Araçlar</div>
+    <div class="tab" data-id="sihirbaz"><i class="ti ti-wand"></i><span>Grafik sihirbazı</span></div>
+    <div class="tab" data-id="radyo"><i class="ti ti-radio"></i><span>Canlı radyo</span></div>
+    <div class="tab" data-id="haber"><i class="ti ti-news"></i><span>Haber kanalı</span></div>
+    <div class="tab" data-id="tema"><i class="ti ti-palette"></i><span>Tema ve renk</span></div>
+    <div class="side-foot"><div class="dot"></div><span>Sistem çalışıyor</span><a href="/logout" title="Çıkış yap" style="margin-left:auto;color:#8fa2c4;font-size:18px;text-decoration:none"><i class="ti ti-logout"></i></a></div>
+  </aside>
+  <main>
+    <header>
+      <div><h1 id="title">Şablon Excel giriş</h1><p id="desc"></p></div>
+      <div class="clockbox">
+        <svg id="analog" width="52" height="52" viewBox="0 0 100 100"></svg>
+        <div class="digital"><b id="time">--:--:--</b><small id="date"></small></div>
+      </div>
+    </header>
+    <div class="content"><div class="stage"><div class="empty" id="empty"></div></div></div>
+  </main>
+</div>
+<script>
+const TABS={
+  sablon:{t:"Şablon Excel giriş",d:"Boş şablonları yükle, sütunları tanıt ve kaydet",i:"ti-file-spreadsheet",s:2},
+  veri:{t:"Veri dolu Excel giriş",d:"Dolu dosyayı yükle, 12 hazır grafik otomatik oluşsun",i:"ti-table-import",s:2},
+  nielsen:{t:"Nielsen giriş",d:"Aylık Nielsen dosyasından HARIBO analizleri",i:"ti-chart-dots-3",s:4},
+  sihirbaz:{t:"Grafik sihirbazı",d:"Adım adım, sıfırdan grafik oluştur",i:"ti-wand",s:5},
+  radyo:{t:"Canlı radyo",d:"Türk radyoları ve dünya haritasından ülke radyoları",i:"ti-radio",s:6},
+  haber:{t:"Haber kanalı",d:"Canlı yayın, son dakika ve piyasalar",i:"ti-news",s:6},
+  tema:{t:"Tema ve renk",d:"22 tema ve renk düzenleyici",i:"ti-palette",s:7}
+};
+function show(id){
+  const x=TABS[id];
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.id===id));
+  document.getElementById('title').textContent=x.t;
+  document.getElementById('desc').textContent=x.d;
+  const e=document.getElementById('empty');
+  e.innerHTML=`<div class="ic"><i class="ti ${x.i}"></i></div><h2>${x.t}</h2><p>${x.d}.<br>Bu bölüm yapım planının ${x.s}. adımında burada açılacak.</p><span class="badge"><i class="ti ti-hourglass"></i> Yakında</span>`;
+  e.style.animation='none';void e.offsetWidth;e.style.animation='';
+  try{localStorage.setItem('tab',id)}catch(_){}
+}
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>show(t.dataset.id));
+let start='sablon';try{start=localStorage.getItem('tab')||start}catch(_){}
+show(TABS[start]?start:'sablon');
+
+/* Clock: analog + digital */
+const A=document.getElementById('analog');
+let face='<circle cx="50" cy="50" r="46" fill="rgba(10,22,48,.9)" stroke="#c9a24a" stroke-width="2"/>';
+for(let i=0;i<12;i++){const a=i*30*Math.PI/180,r1=i%3?38:34;face+=`<line x1="${50+r1*Math.sin(a)}" y1="${50-r1*Math.cos(a)}" x2="${50+42*Math.sin(a)}" y2="${50-42*Math.cos(a)}" stroke="${i%3?'#5d7096':'#f2d68a'}" stroke-width="${i%3?2:3}" stroke-linecap="round"/>`;}
+face+='<line id="hh" x1="50" y1="50" x2="50" y2="28" stroke="#eaf0fa" stroke-width="4" stroke-linecap="round"/><line id="mm" x1="50" y1="50" x2="50" y2="18" stroke="#eaf0fa" stroke-width="3" stroke-linecap="round"/><line id="ss" x1="50" y1="56" x2="50" y2="14" stroke="#5fb8f0" stroke-width="1.5" stroke-linecap="round"/><circle cx="50" cy="50" r="3.5" fill="#f2d68a"/>';
+A.innerHTML=face;
+function tick(){
+  const n=new Date(),h=n.getHours(),m=n.getMinutes(),s=n.getSeconds();
+  document.getElementById('hh').setAttribute('transform',`rotate(${(h%12)*30+m*.5} 50 50)`);
+  document.getElementById('mm').setAttribute('transform',`rotate(${m*6+s*.1} 50 50)`);
+  document.getElementById('ss').setAttribute('transform',`rotate(${s*6} 50 50)`);
+  document.getElementById('time').textContent=n.toLocaleTimeString('tr-TR');
+  document.getElementById('date').textContent=n.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+tick();setInterval(tick,1000);
+
+/* Soft starfield */
+const c=document.getElementById('stars'),x=c.getContext('2d');let S=[];
+function size(){c.width=innerWidth;c.height=innerHeight;S=Array.from({length:Math.round(innerWidth*innerHeight/9000)},()=>({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.3+.2,p:Math.random()*6.28}));}
+function draw(t){x.clearRect(0,0,c.width,c.height);for(const s of S){x.globalAlpha=.35+.35*Math.sin(t/1400+s.p);x.fillStyle='#cfe2ff';x.beginPath();x.arc(s.x,s.y,s.r,0,6.28);x.fill();}requestAnimationFrame(draw);}
+addEventListener('resize',size);size();requestAnimationFrame(draw);
+</script>
+</body>
+</html>
