@@ -201,6 +201,14 @@
     } }
   ];
 
+  const BASE = { gosterge: M => M.targetCol ? 'Gerçekleşen ÷ hedef' : 'En büyük kalemin toplamdaki payı', radar: () => 'Kırılım bazında toplamlar (yüzde sütunları ortalama)',
+    kombine: () => 'Aylık toplam; büyüme bir önceki aya göre', alan: () => 'Ay ay biriken toplam' };
+  function noteFor(c, M, info) {
+    const per = M.times.length ? M.times[0] + (M.times.length > 1 ? '–' + M.times[M.times.length - 1] : '') : 'tüm satırlar';
+    const base = BASE[c.id] ? BASE[c.id](M) : (M.primary ? M.primary.name + ' toplamı' : '');
+    return 'Kaynak: ' + info.file + ' · Dönem: ' + per + ' · Taban: ' + base;
+  }
+
   // ---------- KPIs ----------
   function kpis(M) {
     const out = [];
@@ -234,22 +242,26 @@
         <span class="pill"><i class="ti ti-rows"></i>${M.rows.length.toLocaleString('tr-TR')} satır</span>
         <span class="pill ${info.missing.length ? 'warn' : 'ok'}"><i class="ti ti-${info.missing.length ? 'alert-triangle' : 'circle-check'}"></i>${info.matched}/${info.total} sütun eşleşti</span>
         ${info.missing.length ? `<span class="pill warn" title="${esc(info.missing.join(', '))}">Eksik: ${esc(info.missing.slice(0, 3).join(', '))}${info.missing.length > 3 ? '…' : ''}</span>` : ''}
-        <button class="btn ghost" id="v-reset" style="margin-left:auto"><i class="ti ti-upload"></i> Başka dosya</button></div>
+        <button class="btn ghost" id="v-reset" style="margin-left:auto"><i class="ti ti-upload"></i> Başka dosya</button>
+        <button class="btn gold" id="v-all"><i class="ti ti-file-type-pdf"></i> Tüm raporu indir</button></div>
       <div class="kpis">${kpis(M).map(k => `<div class="kpi"><i class="ti ${k.i}"></i><div><span>${esc(k.l)}</span><b class="${k.c || ''}">${esc(k.v)}</b></div></div>`).join('')}</div>
       <div class="cgrid">${built.map((c, i) => `<div class="ccard${c.wide ? ' wide' : ''}" style="animation-delay:${i * 60}ms">
         <div class="cc-h"><div><b><i class="ti ${c.icon}"></i> <span class="cc-t">${esc(c.style.title || c.name)}</span></b><small class="cc-s">${esc(c.need ? 'Bu grafik için ' + c.need + ' gerekli' : (c.style.sub || c.sub))}</small></div>
-          <div class="cc-tools"><button class="icon-btn gear" data-gear="${c.id}" title="Görünüm ayarları"${c.need ? ' disabled' : ''}><i class="ti ti-adjustments"></i></button><button class="icon-btn" title="İndir: PNG · PDF · PPTX (3. adımda)" disabled><i class="ti ti-download"></i></button></div></div>
-        <div class="cc-body" id="ch-${c.id}">${c.need ? '<div class="empty-small"><i class="ti ti-chart-dots-3"></i><br>Şablonda gerekli sütun yok</div>' : ''}</div></div>`).join('')}</div>`;
+          <div class="cc-tools"><button class="icon-btn gear" data-gear="${c.id}" title="Görünüm ayarları"${c.need ? ' disabled' : ''}><i class="ti ti-adjustments"></i></button><button class="icon-btn dl" data-dl="${c.id}" title="İndir: PNG · PDF · PPTX"${c.need ? ' disabled' : ''}><i class="ti ti-download"></i></button></div></div>
+        <div class="cc-body" id="ch-${c.id}">${c.need ? '<div class="empty-small"><i class="ti ti-chart-dots-3"></i><br>Şablonda gerekli sütun yok</div>' : ''}</div>
+        ${c.need ? '' : `<div class="cc-foot"><i class="ti ti-info-circle"></i> ${esc(noteFor(c, M, info))}</div>`}</div>`).join('')}</div>`;
     box.querySelector('#v-reset').onclick = () => { if (G.Stil) G.Stil.close(); disposeCharts(); box.innerHTML = ''; root.querySelector('#v-setup').style.display = ''; };
     root.querySelector('#v-setup').style.display = 'none';
     disposeCharts();
     if (typeof echarts === 'undefined') { box.querySelectorAll('.cc-body').forEach(b => b.innerHTML = '<div class="empty-small">Grafik kütüphanesi yüklenemedi, sayfayı yenile.</div>'); return; }
-    const byId = {};
+    const byId = {}, CURRENT = {};
+    built.forEach(c => { if (!c.need) CURRENT[c.id] = { title: c.style.title || c.name, sub: c.style.sub || c.sub, option: c.option, note: noteFor(c, M, info) }; });
     built.forEach(c => { if (c.need) return; const el = box.querySelector('#ch-' + c.id); const ch = echarts.init(el, null, { renderer: 'canvas' }); ch.setOption(c.option); charts.push(ch); byId[c.id] = ch; });
     box.querySelectorAll('[data-gear]').forEach(btn => btn.onclick = () => {
       const c = CHARTS.find(x => x.id === btn.dataset.gear), card = btn.closest('.ccard'), ch = byId[c.id];
       const cur = built.find(x => x.id === c.id);
       const redraw = st => { const r = make(c, st); if (r.option) ch.setOption(r.option, true);
+        CURRENT[c.id] = { title: st.title || c.name, sub: st.sub || r.sub, option: r.option, note: noteFor(c, M, info) };
         card.querySelector('.cc-t').textContent = st.title || c.name; card.querySelector('.cc-s').textContent = st.sub || r.sub || ''; return r; };
       box.querySelectorAll('.ccard').forEach(x => x.classList.toggle('editing', x === card));
       card.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -266,6 +278,17 @@
         onReset: async () => { await putStyle(info.tplId + ':' + c.id, null); redraw(styleOf(c.id)); card.classList.remove('editing'); }
       });
     });
+    box.querySelectorAll('[data-dl]').forEach(btn => btn.onclick = e => { e.stopPropagation(); G.Export.openMenu(btn, () => CURRENT[btn.dataset.dl]); });
+    box.querySelector('#v-all').onclick = async () => {
+      const b = box.querySelector('#v-all'), old = b.innerHTML; b.disabled = true;
+      try {
+        await G.Export.pdfAll(CHARTS.filter(c => CURRENT[c.id]).map(c => CURRENT[c.id]), {
+          title: info.tplName || 'Rapor', subtitle: info.file + ' · ' + M.rows.length.toLocaleString('tr-TR') + ' satır', kpis: kpis(M),
+          note: 'Kaynak: ' + info.file + (M.times.length ? ' · Dönem: ' + M.times[0] + '–' + M.times[M.times.length - 1] : '') },
+          (i, n) => b.innerHTML = '<i class="ti ti-loader-2"></i> Hazırlanıyor ' + i + '/' + n);
+      } catch (err) { console.error(err); alert('Rapor oluşturulamadı.'); }
+      b.innerHTML = old; b.disabled = false;
+    };
     if (ro) ro.disconnect(); ro = new ResizeObserver(() => charts.forEach(c => c.resize())); ro.observe(box);
     G.__lastModel = M;
   }
@@ -295,7 +318,7 @@
         const rows = raw.slice(hi + 1).map(r => { const o = {}; Object.entries(map).forEach(([k, i]) => o[k] = r[i]); return o; })
           .filter(o => Object.values(o).some(v => v !== null && v !== ''));
         const tplUsed = { ...tpl, columns: tpl.columns.filter(c => !missing.includes(c.name)) };
-        renderResult(root, buildModel(tplUsed, rows), { tplId: tpl.id, file: file.name, matched: total - missing.length, total, missing });
+        renderResult(root, buildModel(tplUsed, rows), { tplId: tpl.id, tplName: tpl.name, file: file.name, matched: total - missing.length, total, missing });
       } catch (err) { console.error(err); msg.className = 'msg err'; msg.textContent = 'Dosya okunamadı. Geçerli bir Excel dosyası olduğundan emin ol.'; }
     };
     fr.readAsArrayBuffer(file);

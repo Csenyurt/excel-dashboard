@@ -157,6 +157,14 @@ header p{color:var(--muted);font-size:13px;margin-top:3px}
 .dr-foot .msg{flex:1 1 100%;text-align:right}
 .ccard.editing{border-color:rgba(242,214,138,.7);box-shadow:0 0 0 1px rgba(242,214,138,.3),0 0 40px rgba(242,214,138,.12)}
 .cc-tools .gear:not(:disabled){color:#b5c3dc}
+.cc-foot{display:flex;gap:6px;align-items:flex-start;font-size:11px;color:#7f93b8;border-top:1px solid var(--line);padding:9px 2px 6px;margin-top:4px;line-height:1.5}
+.cc-foot i{font-size:14px;margin-top:1px}
+.dlmenu{position:fixed;z-index:60;width:300px;padding:6px;border-radius:14px;background:rgba(6,16,36,.98);border:1px solid rgba(242,214,138,.35);box-shadow:0 20px 60px rgba(0,0,0,.5);animation:rise .2s ease}
+.dlmenu button{display:flex;align-items:center;gap:12px;width:100%;padding:9px 12px;border:0;border-radius:9px;background:none;color:#c9d4e8;font-size:13px;text-align:left;cursor:pointer;font-family:inherit}
+.dlmenu button i{font-size:20px;color:var(--gold)}.dlmenu button small{display:block;color:#7f93b8;font-size:11px}
+.dlmenu button:hover:not(:disabled){background:rgba(242,214,138,.08);color:var(--gold)}.dlmenu button:disabled{opacity:.45;cursor:default}
+.dlmenu hr{border:0;border-top:1px solid var(--line);margin:4px 6px}.dl-msg{font-size:12px;color:#5dcaa5;padding:4px 12px;min-height:18px}
+.cc-tools .dl:not(:disabled){color:#b5c3dc}
 /* Tablet / narrow */
 @media(max-width:900px){
   .app{grid-template-columns:76px 1fr}
@@ -201,7 +209,9 @@ header p{color:var(--muted);font-size:13px;margin-top:3px}
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
 <script src="/js/sablon.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="/js/stil.js"></script>
+<script src="/js/export.js"></script>
 <script src="/js/veri.js"></script>
 <script>
 const RENDER={sablon:r=>renderSablon(r),veri:r=>renderVeri(r)};
