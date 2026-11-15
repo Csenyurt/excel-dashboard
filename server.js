@@ -40,6 +40,43 @@ function loginPage(res, msg, code) {
   res.end(LOGIN.replace('__ERROR__', msg || ''));
 }
 
+// ---------- Data store (JSON files in /app/data, kept in a Docker volume) ----------
+const DATA = process.env.DATA_DIR || path.join(__dirname, 'data');
+fs.mkdirSync(DATA, { recursive: true });
+function load(name) { try { return JSON.parse(fs.readFileSync(path.join(DATA, name + '.json'), 'utf8')); } catch (_) { return []; } }
+function save(name, v) { const f = path.join(DATA, name + '.json'); fs.writeFileSync(f + '.tmp', JSON.stringify(v)); fs.renameSync(f + '.tmp', f); }
+function json(res, code, v) { res.writeHead(code, { 'Content-Type': TYPES['.json'], 'Cache-Control': 'no-store' }); res.end(JSON.stringify(v)); }
+function readBody(req, max, cb) {
+  let b = '', over = false;
+  req.on('data', c => { b += c; if (b.length > max) { over = true; req.destroy(); } });
+  req.on('end', () => { if (over) return cb(new Error('too large')); try { cb(null, b ? JSON.parse(b) : {}); } catch (e) { cb(e); } });
+}
+function api(req, res, url) {
+  // Templates
+  if (url === '/api/templates' && req.method === 'GET') return json(res, 200, load('templates'));
+  if (url === '/api/templates' && req.method === 'POST') {
+    return readBody(req, 2e6, (err, t) => {
+      if (err || !t || !t.name || !Array.isArray(t.columns)) return json(res, 400, { error: 'Geçersiz şablon' });
+      const list = load('templates');
+      const item = {
+        id: crypto.randomBytes(6).toString('hex'),
+        name: String(t.name).slice(0, 80),
+        file: String(t.file || '').slice(0, 200),
+        sheet: String(t.sheet || '').slice(0, 100),
+        headerRow: Number(t.headerRow) || 1,
+        columns: t.columns.slice(0, 300).map(c => ({ name: String(c.name).slice(0, 120), type: String(c.type).slice(0, 20), role: String(c.role).slice(0, 20) })),
+        createdAt: new Date().toISOString()
+      };
+      list.unshift(item); save('templates', list); json(res, 201, item);
+    });
+  }
+  const m = url.match(/^\/api\/templates\/([a-f0-9]+)$/);
+  if (m && req.method === 'DELETE') {
+    const list = load('templates').filter(t => t.id !== m[1]); save('templates', list); return json(res, 200, { ok: true });
+  }
+  json(res, 404, { error: 'Bulunamadı' });
+}
+
 http.createServer((req, res) => {
   const url = decodeURIComponent((req.url || '/').split('?')[0]);
   if (url === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); }
@@ -66,6 +103,7 @@ http.createServer((req, res) => {
     res.writeHead(302, { Location: '/login' }); return res.end();
   }
   if (url === '/login') { res.writeHead(302, { Location: '/' }); return res.end(); }
+  if (url.startsWith('/api/')) return api(req, res, url);
 
   let file = path.normalize(path.join(ROOT, url));
   if (!file.startsWith(ROOT)) { res.writeHead(403); return res.end(); }

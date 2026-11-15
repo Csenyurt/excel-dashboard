@@ -55,6 +55,53 @@ header p{color:var(--muted);font-size:13px;margin-top:3px}
 .empty p{color:var(--muted);font-size:14px;line-height:1.7}
 .badge{display:inline-flex;align-items:center;gap:6px;margin-top:20px;font-size:12px;padding:6px 14px;border-radius:20px;color:var(--neon);border:1px solid rgba(95,184,240,.35);background:rgba(95,184,240,.08)}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+/* Components */
+.stage.filled{display:block;align-items:initial;justify-content:initial;padding:26px}
+.split{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:22px;position:relative;z-index:1}
+.panel{background:rgba(6,16,36,.45);border:1px solid var(--line);border-radius:18px;padding:20px;min-height:200px}
+.ph{display:flex;align-items:center;gap:8px;color:var(--gold);font-weight:600;font-size:15px;margin-bottom:16px}
+.ph i{font-size:19px}
+.badge-n{margin-left:auto;font-size:12px;color:var(--neon);border:1px solid rgba(95,184,240,.35);border-radius:12px;padding:2px 10px}
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:280px;border:1.5px dashed rgba(120,160,230,.35);border-radius:16px;cursor:pointer;transition:.25s;text-align:center;color:var(--muted);font-size:13px}
+.drop b{color:var(--text);font-size:16px;font-weight:600}
+.drop:hover,.drop.over{border-color:var(--gold);background:rgba(242,214,138,.05)}
+.drop-ic{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;font-size:30px;color:var(--gold);background:rgba(242,214,138,.1);border:1px solid rgba(242,214,138,.3);margin-bottom:8px}
+.row-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.filechip{display:flex;align-items:center;gap:8px;font-size:13px;padding:7px 12px;border-radius:10px;background:rgba(95,184,240,.08);border:1px solid rgba(95,184,240,.3);color:var(--neon)}
+.grid3{display:grid;grid-template-columns:2fr 1.3fr .8fr;gap:12px}
+.fld{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)}
+.fld input,.fld select,.coltable select{height:40px;border-radius:10px;border:1px solid rgba(120,160,230,.25);background:rgba(6,16,36,.75);color:var(--text);padding:0 12px;font-size:14px;outline:none;font-family:inherit}
+.fld input:focus,.fld select:focus,.coltable select:focus{border-color:var(--gold2)}
+.hint{margin:16px 0 10px;font-size:13px;color:var(--neon);display:flex;gap:6px;align-items:center}
+.coltable{border:1px solid var(--line);border-radius:12px;max-height:380px;overflow:auto}
+.coltable .ch,.coltable .cr{display:grid;grid-template-columns:minmax(0,1.5fr) 1fr 1fr;gap:10px;align-items:center;padding:8px 14px}
+.coltable .ch{position:sticky;top:0;background:#0d1b3a;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7f93b8;z-index:1}
+.coltable .cr{border-top:1px solid var(--line)}
+.coltable .cn{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.coltable select{height:34px;font-size:13px}
+.legend{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.7}
+.legend b{color:#b5c3dc;font-weight:600}
+.actions{display:flex;justify-content:flex-end;align-items:center;gap:14px;margin-top:16px}
+.btn{display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 18px;border-radius:11px;border:1px solid rgba(120,160,230,.3);background:transparent;color:var(--text);font-size:14px;cursor:pointer;font-family:inherit;transition:.2s}
+.btn:hover{border-color:var(--neon)}
+.btn.gold{border:0;color:#1a1405;font-weight:600;background:linear-gradient(145deg,#f2d68a,#c9a24a);box-shadow:0 8px 22px rgba(201,162,74,.25)}
+.btn.gold:hover{filter:brightness(1.08)}
+.btn.ghost{height:34px;font-size:13px;color:var(--muted)}
+.msg{font-size:13px}.msg.err{color:#f09595}.msg.ok{color:#5dcaa5}
+.tpllist{display:flex;flex-direction:column;gap:12px;margin-top:6px}
+.tplcard{padding:14px;border-radius:14px;background:rgba(18,34,70,.55);border:1px solid var(--panel-b);animation:rise .4s ease}
+.tc-top{display:flex;justify-content:space-between;align-items:center}
+.tc-top b{font-size:15px}
+.tc-meta{font-size:12px;color:var(--muted);margin:4px 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:11px;padding:3px 9px;border-radius:8px;background:rgba(127,147,184,.12);color:#b5c3dc}
+.chip.r-k{background:rgba(95,184,240,.12);color:#8fd0f7}.chip.r-o{background:rgba(242,214,138,.12);color:#f2d68a}
+.chip.r-z{background:rgba(93,202,165,.12);color:#7fdcbc}.chip.r-h{background:rgba(240,149,149,.12);color:#f5b0b0}
+.icon-btn{width:30px;height:30px;border-radius:8px;border:1px solid transparent;background:none;color:var(--muted);cursor:pointer;font-size:16px}
+.icon-btn:hover{color:#f09595;border-color:rgba(240,149,149,.3)}.icon-btn.warn{color:#f09595;border-color:#f09595}
+.empty-small{text-align:center;color:var(--muted);font-size:13px;line-height:1.8;padding:30px 10px}
+.empty-small i{font-size:28px;color:#5d7096}
+@media(max-width:1100px){.split{grid-template-columns:1fr}.grid3{grid-template-columns:1fr 1fr}}
 /* Tablet / narrow */
 @media(max-width:900px){
   .app{grid-template-columns:76px 1fr}
@@ -91,10 +138,13 @@ header p{color:var(--muted);font-size:13px;margin-top:3px}
         <div class="digital"><b id="time">--:--:--</b><small id="date"></small></div>
       </div>
     </header>
-    <div class="content"><div class="stage"><div class="empty" id="empty"></div></div></div>
+    <div class="content"><div class="stage" id="stage"></div></div>
   </main>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="/js/sablon.js"></script>
 <script>
+const RENDER={sablon:r=>renderSablon(r)};
 const TABS={
   sablon:{t:"Şablon Excel giriş",d:"Boş şablonları yükle, sütunları tanıt ve kaydet",i:"ti-file-spreadsheet",s:2},
   veri:{t:"Veri dolu Excel giriş",d:"Dolu dosyayı yükle, 12 hazır grafik otomatik oluşsun",i:"ti-table-import",s:2},
@@ -109,6 +159,9 @@ function show(id){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.id===id));
   document.getElementById('title').textContent=x.t;
   document.getElementById('desc').textContent=x.d;
+  const st=document.getElementById('stage');
+  if(window.RENDER&&RENDER[id]){st.className='stage filled';RENDER[id](st);try{localStorage.setItem('tab',id)}catch(_){};return;}
+  st.className='stage';st.innerHTML='<div class="empty" id="empty"></div>';
   const e=document.getElementById('empty');
   e.innerHTML=`<div class="ic"><i class="ti ${x.i}"></i></div><h2>${x.t}</h2><p>${x.d}.<br>Bu bölüm yapım planının ${x.s}. adımında burada açılacak.</p><span class="badge"><i class="ti ti-hourglass"></i> Yakında</span>`;
   e.style.animation='none';void e.offsetWidth;e.style.animation='';
