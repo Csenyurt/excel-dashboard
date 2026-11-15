@@ -167,7 +167,7 @@ function show(id){
   document.getElementById('title').textContent=x.t;
   document.getElementById('desc').textContent=x.d;
   const st=document.getElementById('stage');
-  if(window.RENDER&&RENDER[id]){st.className='stage filled';RENDER[id](st);try{localStorage.setItem('tab',id)}catch(_){};return;}
+  if(typeof RENDER!=="undefined"&&RENDER[id]){st.className='stage filled';RENDER[id](st);try{localStorage.setItem('tab',id)}catch(_){};return;}
   st.className='stage';st.innerHTML='<div class="empty" id="empty"></div>';
   const e=document.getElementById('empty');
   e.innerHTML=`<div class="ic"><i class="ti ${x.i}"></i></div><h2>${x.t}</h2><p>${x.d}.<br>Bu bölüm yapım planının ${x.s}. adımında burada açılacak.</p><span class="badge"><i class="ti ti-hourglass"></i> Yakında</span>`;
