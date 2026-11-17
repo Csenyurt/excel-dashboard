@@ -231,10 +231,46 @@
   }
   function disposeCharts() { charts.forEach(c => c.dispose && c.dispose()); charts = []; }
 
+  // ---- ECharts seçeneğini sihirbaz tablosuna çevir ----
+  const WZTYPE = { cizgi: 'cizgi', sutun: 'sutun', bar: 'yatay', halka: 'halka', pasta: 'pasta', radar: 'radar', alan: 'alan', yigilmis: 'yigilmis', kombine: 'kombine', selale: 'selale', isi: 'isi', gosterge: 'gosterge' };
+  const arr = x => Array.isArray(x) ? x : x ? [x] : [];
+  function optToTable(o) {
+    const ser = arr(o.series).filter(x => !(x.itemStyle && x.itemStyle.color === 'transparent') && x.name !== 'h');
+    const val = v => v && typeof v === 'object' && !Array.isArray(v) ? (v.raw !== undefined ? v.raw : v.value) : v;
+    const t0 = ser[0] && ser[0].type;
+    if (t0 === 'pie' || t0 === 'funnel') return { cats: ser[0].data.map(d => d.name), series: [{ name: ser[0].name || 'Değer', data: ser[0].data.map(d => +val(d) || 0) }] };
+    if (t0 === 'radar') { const ind = arr(o.radar)[0].indicator; return { cats: ind.map(i => i.name), series: ser[0].data.map(d => ({ name: d.name, data: d.value.map(v => +v || 0) })) }; }
+    if (t0 === 'gauge') { const v = +val(ser[0].data[0]) || 0; return { cats: ['Toplam'], series: [{ name: ser[0].data[0].name || 'Gerçekleşen', data: [v] }, { name: 'Hedef', data: [ser[0].max || v] }] }; }
+    if (t0 === 'heatmap') { const xs = arr(o.xAxis)[0].data, ys = arr(o.yAxis)[0].data; const S2 = ys.map(y => ({ name: String(y), data: xs.map(() => 0) })); ser[0].data.forEach(d => { const q = Array.isArray(d) ? d : d.value; if (S2[q[1]]) S2[q[1]].data[q[0]] = +q[2] || 0; }); return { cats: xs.map(String), series: S2 }; }
+    const ca = [...arr(o.xAxis), ...arr(o.yAxis)].find(a => a.type === 'category'); const cats = ca ? ca.data.map(String) : [];
+    let out = ser.map(x => ({ name: x.name || 'Değer', data: cats.map((_, j) => { const v = val(x.data[j]); return v === null || v === undefined || v === '-' ? 0 : +v || 0; }) }));
+    if (cats.length && cats[cats.length - 1] === 'Toplam' && t0 === 'bar' && arr(o.series).some(x => x.name === 'h')) { cats.pop(); out.forEach(x => x.data.pop()); }
+    return { cats, series: out };
+  }
+  function tableText(t, S0) {
+    let idx = t.cats.map((_, j) => j); const first = t.series[0] ? t.series[0].data : [];
+    if (S0.sort === 'büyükten küçüğe') idx.sort((a, b) => first[b] - first[a]); else if (S0.sort === 'küçükten büyüğe') idx.sort((a, b) => first[a] - first[b]); else if (S0.sort === 'alfabetik') idx.sort((a, b) => t.cats[a].localeCompare(t.cats[b], 'tr'));
+    if (+S0.topN > 0) idx = idx.slice(0, +S0.topN);
+    const clean = x => String(x).replace(/[\t\n]/g, ' ');
+    return [['Kategori', ...t.series.map(x => clean(x.name))].join('\t'), ...idx.map(j => [clean(t.cats[j]), ...t.series.map(x => x.data[j])].join('\t'))].join('\n');
+  }
+  function wzState(c, base, wz) {
+    const W = G.Wizard; const S0 = Object.assign({}, W.DEF, { type: WZTYPE[c.id] || 'sutun', title: c.name, sub: base.sub || '', table: false, palette: 'Altın gece', shape: c.id === 'bar' || c.id === 'sutun' ? 'yuvarlak' : 'duz' }, wz || {});
+    S0.data = tableText(optToTable(base.option), S0); return S0;
+  }
+  function tableUnder(card, S0) {
+    let el = card.querySelector('.cc-table'); if (!S0.table) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement('div'); el.className = 'dtwrap cc-table'; card.querySelector('.cc-body').after(el); }
+    const rows = String(S0.data).split('\n').map(r => r.split('\t')); const f = v => isNaN(+v) || v === '' ? v : (+v).toLocaleString('tr-TR', { maximumFractionDigits: +S0.dec || 0 });
+    el.innerHTML = `<table class="dtable"><tr>${rows[0].map(h => `<th>${esc(h)}</th>`).join('')}</tr>${rows.slice(1).map(r => `<tr>${r.map((v, i) => `<td>${esc(i ? f(v) : v)}</td>`).join('')}</tr>`).join('')}</table>`;
+  }
+  const stripWz = S0 => { const o = Object.assign({}, S0); delete o.data; delete o.step; return o; };
+
   function renderResult(root, M, info) {
     const box = root.querySelector('#v-result');
     const styleOf = id => Object.assign({}, STYLES[info.tplId + ':*'] || {}, STYLES[info.tplId + ':' + id] || {});
-    const make = (c, st) => { let r; CUR = st || {}; try { r = c.build(M); } catch (e) { r = { need: 'uygun veri' }; console.error(c.id, e); } CUR = {};
+    const make = (c, st) => { let r; CUR = st && !st.wz ? st : {}; try { r = c.build(M); } catch (e) { r = { need: 'uygun veri' }; console.error(c.id, e); } CUR = {};
+      if (r.option && st && st.wz && G.Wizard) { try { const S0 = wzState(c, r, st.wz); const o = G.Wizard.optionFor(S0); if (o) { r.option = o; r.sub = S0.sub; r.wz = S0; return { ...c, ...r, style: { title: S0.title, sub: S0.sub, wz: st.wz } }; } } catch (e) { console.error('wz', c.id, e); } }
       if (r.option && G.Stil) r.option = G.Stil.applyStyle(r.option, st); return { ...c, ...r, style: st }; };
     const built = CHARTS.map(c => make(c, styleOf(c.id)));
     box.innerHTML = `
@@ -263,6 +299,7 @@
     const byId = {}, CURRENT = {};
     built.forEach(c => { if (!c.need) CURRENT[c.id] = { title: c.style.title || c.name, sub: c.style.sub || c.sub, option: c.option, note: noteFor(c, M, info), measureType: M.primary && M.primary.type }; });
     built.forEach(c => { if (c.need) return; const el = box.querySelector('#ch-' + c.id); const ch = echarts.init(el, null, { renderer: 'canvas' }); ch.setOption(c.option); charts.push(ch); byId[c.id] = ch; });
+    built.forEach(c => { if (c.wz) tableUnder(box.querySelector('#ch-' + c.id).closest('.ccard'), c.wz); });
     box.querySelectorAll('[data-gear]').forEach(btn => btn.onclick = () => {
       const c = CHARTS.find(x => x.id === btn.dataset.gear), card = btn.closest('.ccard'), ch = byId[c.id];
       const cur = built.find(x => x.id === c.id);
@@ -271,6 +308,23 @@
         card.querySelector('.cc-t').textContent = st.title || c.name; card.querySelector('.cc-s').textContent = st.sub || r.sub || ''; return r; };
       box.querySelectorAll('.ccard').forEach(x => x.classList.toggle('editing', x === card));
       card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (G.Wizard) {
+        let base; CUR = {}; try { base = c.build(M); } catch (e) { return; }
+        const saved = (STYLES[info.tplId + ':' + c.id] || {}).wz || (STYLES[info.tplId + ':*'] || {}).wz;
+        const S0 = wzState(c, base, saved);
+        const apply = (S1, play) => { S1.data = tableText(optToTable(base.option), S1); const o = G.Wizard.optionFor(S1); if (!o) return; if (play) ch.clear(); ch.setOption(o, true);
+          CURRENT[c.id] = { title: S1.title, sub: S1.sub, option: o, note: noteFor(c, M, info), measureType: M.primary && M.primary.type };
+          card.querySelector('.cc-t').textContent = S1.title; card.querySelector('.cc-s').textContent = S1.sub || ''; tableUnder(card, S1); };
+        G.Wizard.openEditor({ name: c.name, S: S0, onChange: apply,
+          onSave: async (S1, all) => {
+            if (all) { const common = stripWz(S1); ['type', 'title', 'sub', 'note', 'xName', 'yName', 'topN', 'sort'].forEach(k => delete common[k]);
+              for (const x of CHARTS) { const k = info.tplId + ':' + x.id, own = (STYLES[k] || {}).wz || {}; await putStyle(k, { wz: Object.assign({ type: WZTYPE[x.id] }, own, common, x.id === c.id ? stripWz(S1) : {}) }); }
+            } else await putStyle(info.tplId + ':' + c.id, { wz: stripWz(S1) });
+          },
+          onReset: async () => { await putStyle(info.tplId + ':' + c.id, null); },
+          onClose: () => renderResult(root, M, info) });
+        return;
+      }
       G.Stil.open({ name: c.name, sub: cur.sub, style: styleOf(c.id), kindGroup: G.Stil.kindGroup(cur.option),
         onChange: st => redraw(st),
         onPlay: st => { ch.clear(); redraw(st); },

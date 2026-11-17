@@ -26,7 +26,7 @@
   const DEF = { data: SAMPLE, type: 'sutun', shape: 'yuvarlak', barWidth: 50, radius: 8, gap: 30, lineWidth: 3, symbol: 'circle', symbolSize: 8, inner: 45, palette: 'Altın gece', colors: {},
     hue: 0, sat: 100, light: 100, grad: 'dikey', opacity: 100, glow: 0, colorByData: false, bg: 'saydam', bg1: '#0a1630', bg2: '#1d2f5c', gridLine: 'kesik', axisColor: '#b5c3dc', font: 'Segoe UI', fontSize: 13,
     legend: 'üst', title: 'Yeni grafik', sub: 'Grafik sihirbazı ile oluşturuldu', labels: 'değer', labelPos: 'üst', fmt: 'otomatik', dec: 0, prefix: '', suffix: '', table: true, xName: '', yName: '', note: '',
-    anim: 'Yükselme', speed: 900, step: 1 };
+    anim: 'Yükselme', speed: 900, step: 1, topN: 0, sort: 'dosyadaki sıra' };
   let S = null, chart = null, ro = null;
   const STEPS = ['Veri', 'Grafik türü', 'Şekil', 'Renk ve ton', 'Zemin ve tema', 'Etiketler', 'Hareket ve indirme'];
 
@@ -174,7 +174,10 @@
   function stepHtml() {
     const D = parseData(S.data);
     switch (S.step) {
-      case 1: return `<div class="dr-sec"><h4>Verini yapıştır</h4><p class="cc-foot" style="border:0;padding:0 0 8px">Excel'den hücreleri kopyalayıp buraya yapıştır. İlk satır başlık, ilk sütun kategori olmalı.</p>
+      case 1: if (HOOK && HOOK.embedded) { const D2 = parseData(S.data); return `<div class="dr-sec"><h4>Grafiğin verisi</h4><p class="cc-foot" style="border:0;padding:0 0 8px">Bu grafik yüklediğin Excel'den otomatik geliyor. Hangi kategorilerin, hangi sırayla görüneceğini buradan seçebilirsin.</p>
+        ${range('topN', 'Gösterilecek kategori (0 = hepsi)', 0, 30)}${sel('sort', 'Sıralama', ['büyükten küçüğe', 'küçükten büyüğe', 'alfabetik', 'dosyadaki sıra'])}
+        <div class="dtwrap" style="max-height:260px">${D2 ? `<table class="dtable"><tr><th></th>${D2.series.map(x => `<th>${esc(x.name)}</th>`).join('')}</tr>${D2.cats.map((c, j) => `<tr><td>${esc(c)}</td>${D2.series.map(x => `<td>${esc(fmtV(x.data[j], S))}</td>`).join('')}</tr>`).join('')}</table>` : ''}</div></div>`; }
+        return `<div class="dr-sec"><h4>Verini yapıştır</h4><p class="cc-foot" style="border:0;padding:0 0 8px">Excel'den hücreleri kopyalayıp buraya yapıştır. İlk satır başlık, ilk sütun kategori olmalı.</p>
         <label class="dr-f"><textarea data-k="data" spellcheck="false">${esc(S.data)}</textarea></label>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn ghost"><i class="ti ti-file-spreadsheet"></i> Excel'den al<input type="file" id="wz-x" accept=".xlsx,.xls,.csv" hidden></label><button class="btn ghost" id="wz-sample"><i class="ti ti-sparkles"></i> Örnek veri</button></div>
         <div class="msg ${D ? 'ok' : 'err'}" style="margin-top:8px">${D ? `✓ ${D.cats.length} kategori · ${D.series.length} seri (${D.series.map(s => esc(s.name)).join(', ')})` : 'En az 2 satır gerekli'}</div></div>`;
@@ -214,6 +217,7 @@
     tb.innerHTML = S.table && D ? `<table class="dtable"><tr><th></th>${D.cats.map(c => `<th>${esc(c)}</th>`).join('')}</tr>${D.series.map(s => `<tr><td>${esc(s.name)}</td>${s.data.map(v => `<td>${esc(fmtV(v, S))}</td>`).join('')}</tr>`).join('')}</table>` : '';
   }
   let saveT = null;
+  let HOOK = null;
   function persist() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem('wz', JSON.stringify(S)); } catch (_) {} }, 300); }
   async function lib(root) {
     const el = root.querySelector('#wz-lib'); if (!el) return; const all = await G.Cards.styles(); const list = all['sihirbaz:kutuphane'] && all['sihirbaz:kutuphane'].list || [];
@@ -226,35 +230,36 @@
     root.querySelector('.wz-steps').innerHTML = STEPS.map((n, i) => `<span data-step="${i + 1}" class="${S.step === i + 1 ? 'on' : S.step > i + 1 ? 'done' : ''}"><b>${i + 1}</b>${n}</span>`).join('');
     const pnl = root.querySelector('.wz-panel'); pnl.innerHTML = `<div class="ph" style="margin:0 0 4px"><i class="ti ti-wand"></i> ${S.step}. ${STEPS[S.step - 1]}</div>` + stepHtml() +
       `<div class="wz-nav"><button class="btn ghost" id="wz-prev"${S.step === 1 ? ' disabled' : ''}><i class="ti ti-arrow-left"></i> Geri</button><button class="btn ghost" id="wz-new"><i class="ti ti-refresh"></i> Sıfırdan başla</button>${S.step < 7 ? '<button class="btn gold" id="wz-next">İleri <i class="ti ti-arrow-right"></i></button>' : ''}</div>`;
-    root.querySelectorAll('[data-step]').forEach(x => x.onclick = () => { S.step = +x.dataset.step; paintStep(root); persist(); });
+    root.querySelectorAll('[data-step]').forEach(x => x.onclick = () => { S.step = +x.dataset.step; paintStep(root); HOOK.persist(); });
     const q = s => pnl.querySelector(s);
-    q('#wz-prev').onclick = () => { S.step--; paintStep(root); persist(); }; if (q('#wz-next')) q('#wz-next').onclick = () => { S.step++; paintStep(root); persist(); };
-    q('#wz-new').onclick = () => { S = Object.assign({}, DEF); paintAll(root); persist(); };
+    q('#wz-prev').onclick = () => { S.step--; paintStep(root); HOOK.persist(); }; if (q('#wz-next')) q('#wz-next').onclick = () => { S.step++; paintStep(root); HOOK.persist(); };
+    if (HOOK.embedded) q('#wz-new').style.display = 'none'; else q('#wz-new').onclick = () => { S = Object.assign({}, DEF); paintAll(root); HOOK.persist(); };
     pnl.querySelectorAll('[data-k]').forEach(el => {
       const ev = el.tagName === 'BUTTON' ? 'click' : (el.type === 'range' || el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') && el.type !== 'checkbox' ? 'input' : 'change';
       el.addEventListener(ev, () => { const k = el.dataset.k; S[k] = el.tagName === 'BUTTON' ? el.dataset.v : el.type === 'checkbox' ? el.checked : el.type === 'range' ? +el.value : el.value;
         const out = pnl.querySelector(`[data-out="${k}"]`); if (out) out.textContent = el.value + (out.textContent.replace(/^-?[\d.]+/, '') || '');
         if (el.tagName === 'BUTTON') { pnl.querySelectorAll(`[data-k="${k}"]`).forEach(b => b.classList.toggle('on', b === el)); }
         if (k === 'data') { const D = parseData(S.data), m = pnl.querySelector('.msg'); if (m) { m.className = 'msg ' + (D ? 'ok' : 'err'); m.textContent = D ? `✓ ${D.cats.length} kategori · ${D.series.length} seri` : 'En az 2 satır gerekli'; } }
-        draw(false); persist(); });
+        HOOK.draw(false); HOOK.persist(); });
     });
-    pnl.querySelectorAll('[data-pal]').forEach(b => b.onclick = () => { S.palette = b.dataset.pal; S.colors = {}; paintStep(root); draw(false); persist(); });
-    pnl.querySelectorAll('[data-col]').forEach(el => el.oninput = () => { S.colors = Object.assign({}, S.colors, { [el.dataset.col]: el.value }); draw(false); persist(); });
-    if (q('#wz-sample')) q('#wz-sample').onclick = () => { S.data = SAMPLE; paintStep(root); draw(true); persist(); };
+    pnl.querySelectorAll('[data-pal]').forEach(b => b.onclick = () => { S.palette = b.dataset.pal; S.colors = {}; paintStep(root); HOOK.draw(false); HOOK.persist(); });
+    pnl.querySelectorAll('[data-col]').forEach(el => el.oninput = () => { S.colors = Object.assign({}, S.colors, { [el.dataset.col]: el.value }); HOOK.draw(false); HOOK.persist(); });
+    if (q('#wz-sample')) q('#wz-sample').onclick = () => { S.data = SAMPLE; paintStep(root); HOOK.draw(true); HOOK.persist(); };
     if (q('#wz-x')) q('#wz-x').onchange = e => { const f = e.target.files[0]; if (!f) return; const fr = new FileReader(); fr.onload = ev => { try { const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, blankrows: false }).filter(r => r.some(x => x !== null && x !== '')).slice(0, 60);
-      S.data = rows.map(r => r.map(x => x instanceof Date ? x.toLocaleDateString('tr-TR') : x ?? '').join('\t')).join('\n'); paintStep(root); draw(true); persist(); } catch (_) { alert('Dosya okunamadı'); } }; fr.readAsArrayBuffer(f); };
-    if (q('#wz-play')) q('#wz-play').onclick = () => draw(true);
+      S.data = rows.map(r => r.map(x => x instanceof Date ? x.toLocaleDateString('tr-TR') : x ?? '').join('\t')).join('\n'); paintStep(root); HOOK.draw(true); HOOK.persist(); } catch (_) { alert('Dosya okunamadı'); } }; fr.readAsArrayBuffer(f); };
+    if (q('#wz-play')) q('#wz-play').onclick = () => HOOK.draw(true);
     if (q('#wz-dl')) q('#wz-dl').onclick = e => { e.stopPropagation(); G.Export.openMenu(q('#wz-dl'), current); };
     if (q('#wz-add')) q('#wz-add').onclick = () => { const c = current(); if (c) { G.Basket.add(c); q('#wz-msg').className = 'msg ok'; q('#wz-msg').textContent = 'Sunuma eklendi ✓'; } };
     if (q('#wz-save')) q('#wz-save').onclick = async () => { const all = await G.Cards.styles(); const list = (all['sihirbaz:kutuphane'] && all['sihirbaz:kutuphane'].list || []).slice(0, 39);
       const item = Object.assign({}, S, { at: Date.now() }); delete item.step; list.unshift(item); await G.Cards.putStyle('sihirbaz:kutuphane', { list }); q('#wz-msg').className = 'msg ok'; q('#wz-msg').textContent = 'Kaydedildi ✓'; lib(root); };
     lib(root);
   }
-  function paintAll(root) { paintStep(root); draw(true); }
+  function paintAll(root) { paintStep(root); HOOK.draw(true); }
 
   G.renderSihirbaz = function (root) {
     if (chart) { chart.dispose(); chart = null; } if (ro) ro.disconnect();
+    HOOK = { draw, persist, embedded: false };
     if (!S) { try { S = Object.assign({}, DEF, JSON.parse(localStorage.getItem('wz') || '{}')); } catch (_) { S = Object.assign({}, DEF); } }
     root.innerHTML = `<div class="wz"><section class="panel"><div class="wz-steps"></div><div class="wz-panel"></div></section>
       <div class="wz-prev"><div class="ccard" id="wz-prevcard"><div class="cc-h"><div><b><i class="ti ti-eye"></i> <span id="wz-t"></span></b><small id="wz-s"></small></div></div>
@@ -262,5 +267,28 @@
     paintAll(root);
     ro = new ResizeObserver(() => chart && chart.resize()); ro.observe(root.querySelector('#wz-chart'));
   };
-  G.__wizard = { build, parseData, TYPES, SHAPES, DEF, finalOption };
+  function optionFor(S0) { const o = finalOption(S0); if (o && S0.bg && S0.bg !== 'saydam') o.backgroundColor = S0.bg === 'düz renk' ? S0.bg1 : { type: 'linear', x: 0, y: 0, x2: 1, y2: 1, colorStops: [{ offset: 0, color: S0.bg1 }, { offset: 1, color: S0.bg2 }] }; return o; }
+  // Excel → Grafik kartları için gömülü düzenleyici (çekmece)
+  function openEditor(ctx) {
+    closeEditor(true);
+    const d = document.createElement('div'); d.className = 'drawer wzd'; document.body.appendChild(d);
+    S = ctx.S; S.step = S.step || 2;
+    d.innerHTML = `<div class="dr-head"><div><b><i class="ti ti-wand"></i> ${esc(ctx.name)}</b><small>Sihirbazın tüm seçenekleri · değişiklikler anında görünür</small></div><button class="icon-btn" id="wzd-x"><i class="ti ti-x"></i></button></div>
+      <div class="dr-body"><div class="wz-steps"></div><div class="wz-panel"></div></div>
+      <div class="dr-foot"><span class="msg" id="wzd-msg"></span><button class="btn ghost" id="wzd-reset"><i class="ti ti-restore"></i> Sıfırla</button>
+        <button class="btn ghost" id="wzd-all"><i class="ti ti-copy"></i> Tümüne uygula</button><button class="btn gold" id="wzd-save"><i class="ti ti-device-floppy"></i> Kaydet</button></div>`;
+    HOOK = { embedded: true, draw: play => { ctx.onChange(S, play); }, persist: () => {} };
+    paintStep(d);
+    const msg = d.querySelector('#wzd-msg'), ok = t => { msg.className = 'msg ok'; msg.textContent = t; };
+    d.querySelector('#wzd-x').onclick = () => closeEditor();
+    d.querySelector('#wzd-save').onclick = async () => { await ctx.onSave(S, false); ok('Kaydedildi ✓'); };
+    d.querySelector('#wzd-all').onclick = async () => { await ctx.onSave(S, true); ok('Tüm grafiklere uygulandı ✓'); };
+    d.querySelector('#wzd-reset').onclick = async () => { await ctx.onReset(); closeEditor(); };
+    G.__wzClose = ctx.onClose;
+    requestAnimationFrame(() => d.classList.add('open'));
+  }
+  function closeEditor(silent) { const d = document.querySelector('.drawer.wzd'); if (d) { d.classList.remove('open'); setTimeout(() => d.remove(), 300); }
+    if (HOOK && HOOK.embedded) { S = null; HOOK = null; } if (!silent && G.__wzClose) { const f = G.__wzClose; G.__wzClose = null; f(); } }
+  G.Wizard = { openEditor, closeEditor, optionFor, DEF, TYPES };
+  G.__wizard = { build, parseData, TYPES, SHAPES, DEF, finalOption, optionFor };
 })(typeof window !== 'undefined' ? window : globalThis);
