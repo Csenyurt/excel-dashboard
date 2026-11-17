@@ -58,7 +58,7 @@
         <div class="drop-ic"><i class="ti ti-file-upload"></i></div>
         <b>Şablon Excel'i buraya bırak</b><span>ya da tıklayıp seç · .xlsx, .xls, .csv</span></label>`;
       const inp = ed.querySelector('#tpl-file'), drop = ed.querySelector('#tpl-drop');
-      inp.onchange = () => inp.files[0] && readFile(inp.files[0], root);
+      inp.onchange = () => { const f = inp.files[0]; inp.value = ''; f && readFile(f, root); };
       drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
       drop.ondragleave = () => drop.classList.remove('over');
       drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); e.dataTransfer.files[0] && readFile(e.dataTransfer.files[0], root); };
@@ -97,6 +97,7 @@
       const r = await fetch('/api/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: state.name.trim(), file: state.file, sheet: state.sheet, headerRow: state.headerRow, columns: state.columns }) });
       if (!r.ok) { msg.className = 'msg err'; msg.textContent = 'Kaydedilemedi, tekrar dene.'; return; }
+      try { const it = await r.json(); if (it && it.id) localStorage.setItem('v-tpl', it.id); } catch (_) {}
       state = { wb: null }; renderEditor(root); loadList(root, 'Şablon kaydedildi');
     };
   }

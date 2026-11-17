@@ -331,26 +331,31 @@
     return { map, missing };
   }
 
-  function readFile(root, tpl, file) {
+  function readFile(root, tpl, file, all) {
     const msg = root.querySelector('#v-msg');
     const fr = new FileReader();
     fr.onload = e => {
       try {
         const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
-        const sheet = wb.SheetNames.includes(tpl.sheet) ? tpl.sheet : wb.SheetNames[0];
-        const raw = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { header: 1, raw: true, blankrows: false, defval: null });
-        // find header row: template's row, or the row that matches most template columns
-        let hi = (tpl.headerRow || 1) - 1, best = -1;
-        raw.slice(0, 30).forEach((r, i) => { const s = matchColumns(tpl, r.map(x => String(x ?? ''))).missing.length; if (best < 0 || s < best) { best = s; hi = i; } });
+        // her şablon × her sayfa × ilk 30 satır içinde en iyi eşleşmeyi bul
+        const sheets = wb.SheetNames.map(n => ({ n, raw: XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, blankrows: false, defval: null }) }));
+        const score = t => { let b = null; sheets.forEach(sh => sh.raw.slice(0, 30).forEach((r, i) => { const hdr = r.map(x => String(x ?? '')); const mm = matchColumns(t, hdr);
+          const tot = t.columns.filter(c => c.role !== 'Kullanma').length, ok = tot - mm.missing.length, sc = tot ? ok / tot : 0;
+          if (!b || sc > b.sc || (sc === b.sc && sh.n === t.sheet && b.sheet !== t.sheet)) b = { sc, ok, tot, sheet: sh.n, raw: sh.raw, hi: i }; })); return b; };
+        let pick = score(tpl), switched = false;
+        if (all && all.length > 1 && (!pick || pick.sc < 1)) { all.forEach(t => { if (t.id === tpl.id) return; const s2 = score(t); if (s2 && s2.ok > 0 && (!pick || s2.sc > pick.sc + .2)) { pick = s2; tpl = t; switched = true; } }); }
+        if (!pick || pick.ok === 0) { msg.className = 'msg err'; msg.textContent = 'Bu dosyadaki başlıklar kayıtlı şablonların hiçbiriyle eşleşmiyor. Önce bu dosyanın başlıklarıyla bir şablon kaydet.'; return; }
+        const raw = pick.raw, hi = pick.hi;
+        if (switched) { const sel = root.querySelector('#v-tpl'); if (sel) sel.value = tpl.id; try { localStorage.setItem('v-tpl', tpl.id); } catch (_) {} }
         const header = (raw[hi] || []).map(x => String(x ?? ''));
         const { map, missing } = matchColumns(tpl, header);
         const total = tpl.columns.filter(c => c.role !== 'Kullanma').length;
-        if (total - missing.length === 0) { msg.className = 'msg err'; msg.textContent = 'Bu dosyadaki başlıklar seçtiğin şablonla eşleşmiyor. Doğru şablonu seçtiğinden emin ol.'; return; }
         const rows = raw.slice(hi + 1).map(r => { const o = {}; Object.entries(map).forEach(([k, i]) => o[k] = r[i]); return o; })
           .filter(o => Object.values(o).some(v => v !== null && v !== ''));
+        if (!rows.length) { msg.className = 'msg err'; msg.textContent = 'Başlıklar eşleşti ama başlıkların altında veri satırı yok. Boş şablonu değil, dolu Excel dosyasını yükle.'; return; }
         const tplUsed = { ...tpl, columns: tpl.columns.filter(c => !missing.includes(c.name)) };
-        renderResult(root, buildModel(tplUsed, rows), { tplId: tpl.id, tplName: tpl.name, file: file.name, matched: total - missing.length, total, missing, tpl: tplUsed, rows });
-      } catch (err) { console.error(err); msg.className = 'msg err'; msg.textContent = 'Dosya okunamadı. Geçerli bir Excel dosyası olduğundan emin ol.'; }
+        msg.textContent = ''; renderResult(root, buildModel(tplUsed, rows), { tplId: tpl.id, tplName: tpl.name, file: file.name, matched: total - missing.length, total, missing, tpl: tplUsed, rows });
+      } catch (err) { console.error(err); msg.className = 'msg err'; msg.textContent = 'Dosya işlenirken sorun oluştu (' + (err && err.message || err) + '). Bu mesajın ekran görüntüsünü gönderirsen hemen düzeltebilirim.'; }
     };
     fr.readAsArrayBuffer(file);
   }
@@ -368,8 +373,8 @@
         <div class="drop-ic"><i class="ti ti-table-import"></i></div><b>2. Dolu Excel'i buraya bırak</b><span>ya da tıklayıp seç · grafikler otomatik oluşur</span></label>`;
     const tplSel = step.querySelector('#v-tpl'), inp = step.querySelector('#v-file'), drop = step.querySelector('#v-drop');
     tplSel.onchange = () => { try { localStorage.setItem('v-tpl', tplSel.value); } catch (_) {} };
-    const go = f => { const tpl = list.find(t => t.id === tplSel.value); root.querySelector('#v-msg').textContent = ''; readFile(root, tpl, f); };
-    inp.onchange = () => inp.files[0] && go(inp.files[0]);
+    const go = f => { const tpl = list.find(t => t.id === tplSel.value); const m = root.querySelector('#v-msg'); m.className = 'msg ok'; m.textContent = 'Okunuyor…'; readFile(root, tpl, f, list); };
+    inp.onchange = () => { const f = inp.files[0]; inp.value = ''; f && go(f); };
     drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
     drop.ondragleave = () => drop.classList.remove('over');
     drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); e.dataTransfer.files[0] && go(e.dataTransfer.files[0]); };
