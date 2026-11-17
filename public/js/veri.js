@@ -240,7 +240,7 @@
     box.innerHTML = `
       <div class="v-sum"><span class="filechip"><i class="ti ti-file-spreadsheet"></i>${esc(info.file)}</span>
         <span class="pill"><i class="ti ti-rows"></i>${M.rows.length.toLocaleString('tr-TR')} satır</span>
-        <span class="pill ${info.missing.length ? 'warn' : 'ok'}"><i class="ti ti-${info.missing.length ? 'alert-triangle' : 'circle-check'}"></i>${info.matched}/${info.total} sütun eşleşti</span>
+        <span class="pill ${info.missing.length ? 'warn' : 'ok'}"><i class="ti ti-${info.missing.length ? 'alert-triangle' : 'circle-check'}"></i>${info.auto ? info.total + " sütun tanındı" : info.matched + "/" + info.total + " sütun eşleşti"}</span>
         ${info.missing.length ? `<span class="pill warn" title="${esc(info.missing.join(', '))}">Eksik: ${esc(info.missing.slice(0, 3).join(', '))}${info.missing.length > 3 ? '…' : ''}</span>` : ''}
         <button class="btn ghost" id="v-reset" style="margin-left:auto"><i class="ti ti-upload"></i> Başka dosya</button>
         <button class="btn ghost" id="v-show"><i class="ti ti-player-play"></i> Sunum modu</button>
@@ -359,6 +359,92 @@
     };
     fr.readAsArrayBuffer(file);
   }
+
+  // ===================== Excel → Grafik (otomatik) =====================
+  const sigOf = cols => { const t = cols.map(c => norm(c)).join('|'); let h = 5381; for (let i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0; return 'a' + h.toString(16); };
+  function autoDetect(wb) {
+    const CG = G.ColGuess; let best = null;
+    wb.SheetNames.forEach(n => {
+      const raw = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, blankrows: false, defval: null });
+      // başlık: ilk 30 satırda, en az 2 metin hücresi olan ve altında veri bulunan satır
+      let hi = -1;
+      for (let i = 0; i < Math.min(30, raw.length); i++) {
+        const r = raw[i] || [], txt = r.filter(v => typeof v === 'string' && v.trim()).length, nxt = raw[i + 1] || [];
+        if (txt >= 2 && txt >= r.filter(v => v !== null && v !== '').length * .6 && nxt.some(v => v !== null && v !== '')) { hi = i; break; }
+      }
+      if (hi < 0) return;
+      const head = raw[hi].map(h => String(h ?? '').trim()), body = raw.slice(hi + 1).filter(r => r.some(v => v !== null && v !== ''));
+      const seen = {};
+      const cols = head.map((name, i) => { if (!name) return null; let nm = name; if (seen[nm]) nm = name + ' (' + (++seen[name]) + ')'; else seen[nm] = 1;
+        const smp = body.slice(0, 80).map(r => r[i]); let type = CG.guessType(name, smp);
+        const vals = smp.filter(v => v !== null && v !== '');
+        if (type === 'Metin' && vals.length && vals.filter(v => typeof v === 'number' || (typeof v === 'string' && /^-?[\d.,]+\s*(₺|%|tl)?$/i.test(v.trim()))).length >= vals.length * .8) type = /%/.test(name) ? 'Yüzde' : 'Sayı';
+        if ((type === 'Para' || type === 'Sayı' || type === 'Yüzde') && vals.length && vals.filter(v => typeof v === 'string' && !/\d/.test(v)).length > vals.length * .5) type = 'Metin';
+        if (type === 'Tarih' && vals.length && !vals.some(v => v instanceof Date || timeKey(v))) type = 'Metin';
+        return { name: nm, i, type, role: CG.guessRole(name, type) }; }).filter(Boolean);
+      // çok fazla farklı değeri olan metin sütunları (ör. açıklama, kod) kırılım olarak kullanılmasın
+      cols.forEach(c => { if (c.role !== 'Kırılım') return; const u = new Set(body.map(r => r[c.i])).size; if (u > 300 && u > body.length * .9) c.role = 'Kullanma'; });
+      const tz = cols.filter(c => c.role === 'Zaman'); tz.slice(1).forEach(c => c.role = 'Kırılım');
+      const sc = body.length * Math.max(1, cols.filter(c => c.role === 'Ölçü').length);
+      if (!best || sc > best.sc) best = { sc, sheet: n, head, body, cols, hi };
+    });
+    return best;
+  }
+  let AUTO = null;
+  function autoRender(root) {
+    const A = AUTO, msg = root.querySelector('#v-msg');
+    const cols = A.cols.map(c => Object.assign({}, c, (A.over || {})[c.name] || {}));
+    const tpl = { id: A.sig, name: A.file.replace(/\.[^.]+$/, ''), sheet: A.sheet, columns: cols.map(({ name, type, role }) => ({ name, type, role })) };
+    const used = tpl.columns.filter(c => c.role !== 'Kullanma');
+    if (!used.some(c => c.role === 'Ölçü' || c.role === 'Hedef')) { msg.className = 'msg err'; msg.textContent = 'Bu dosyada grafik çizilecek sayısal bir sütun bulamadım. Aşağıdan bir sütunu "Ölçü" yapabilirsin.'; }
+    const rows = A.body.map(r => { const o = {}; cols.forEach(c => { if (c.role !== 'Kullanma') o[c.name] = r[c.i]; }); return o; });
+    const tplUsed = { ...tpl, columns: used };
+    disposeCharts();
+    renderResult(root, buildModel(tplUsed, rows), { tplId: A.sig, tplName: tpl.name, file: A.file, matched: used.length, total: used.length, missing: [], tpl: tplUsed, rows, auto: true });
+    // sütun düzeltme paneli
+    const sum = root.querySelector('#v-result .v-sum');
+    if (sum) { sum.insertAdjacentHTML('afterbegin', `<button class="btn ghost" id="v-colbtn"><i class="ti ti-columns-3"></i> Sütunları düzelt</button>`);
+      sum.insertAdjacentHTML('afterend', `<section class="panel" id="v-cols" style="display:${A.open ? '' : 'none'};margin-bottom:18px"><div class="ph"><i class="ti ti-columns-3"></i> Sütunlar <small style="color:var(--muted);font-weight:400;margin-left:8px">${esc(A.sheet)} sayfası · ${A.body.length.toLocaleString('tr-TR')} satır · değişiklik bu dosya yapısı için hatırlanır</small></div>
+        <div class="dtwrap" style="max-height:340px"><table class="coltable"><tr><th>Sütun</th><th>Örnek</th><th>Tür</th><th>Rol</th></tr>${cols.map(c => `<tr><td><b>${esc(c.name)}</b></td><td style="color:var(--muted);font-size:12px">${esc(String((A.body.find(r => r[c.i] !== null && r[c.i] !== '') || [])[c.i] instanceof Date ? (A.body.find(r => r[c.i]) || [])[c.i].toLocaleDateString('tr-TR') : (A.body.find(r => r[c.i] !== null && r[c.i] !== '') || [])[c.i] ?? '').slice(0, 24))}</td>
+          <td><select data-cn="${esc(c.name)}" data-k="type">${G.ColGuess.TYPES.map(t => `<option${t === c.type ? ' selected' : ''}>${t}</option>`).join('')}</select></td>
+          <td><select data-cn="${esc(c.name)}" data-k="role">${G.ColGuess.ROLES.map(t => `<option${t === c.role ? ' selected' : ''}>${t}</option>`).join('')}</select></td></tr>`).join('')}</table></div>
+        <div style="display:flex;gap:8px;margin-top:10px"><button class="btn ghost" id="v-colreset"><i class="ti ti-restore"></i> Otomatik tahmine dön</button></div></section>`);
+      root.querySelector('#v-colbtn').onclick = () => { A.open = !A.open; root.querySelector('#v-cols').style.display = A.open ? '' : 'none'; };
+      root.querySelectorAll('#v-cols select').forEach(sl => sl.onchange = async () => { A.over = A.over || {}; const k = sl.dataset.cn; A.over[k] = Object.assign({}, A.over[k], { [sl.dataset.k]: sl.value });
+        await saveOver(A); autoRender(root); });
+      root.querySelector('#v-colreset').onclick = async () => { A.over = {}; await saveOver(A); autoRender(root); };
+    }
+  }
+  async function saveOver(A) { STYLES['cols:' + A.sig] = { over: A.over }; try { await fetch('/api/styles', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'cols:' + A.sig, style: Object.keys(A.over).length ? { over: A.over } : null }) }); } catch (_) {} }
+  function autoRead(root, file) {
+    const msg = root.querySelector('#v-msg'); msg.className = 'msg ok'; msg.textContent = 'Okunuyor…';
+    const fr = new FileReader();
+    fr.onload = e => {
+      try {
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+        const d = autoDetect(wb);
+        if (!d) { msg.className = 'msg err'; msg.textContent = 'Bu dosyada başlık satırı olan bir tablo bulamadım. İlk satırlarda sütun başlıkları olduğundan emin ol.'; return; }
+        const sig = sigOf(d.cols.map(c => c.name));
+        AUTO = { file: file.name, sheet: d.sheet, body: d.body, cols: d.cols, sig, over: ((STYLES['cols:' + sig] || {}).over) || {}, open: false };
+        msg.textContent = ''; autoRender(root);
+      } catch (err) { console.error(err); msg.className = 'msg err'; msg.textContent = 'Dosya işlenirken sorun oluştu (' + (err && err.message || err) + '). Bu mesajın ekran görüntüsünü gönderirsen hemen düzeltebilirim.'; }
+    };
+    fr.readAsArrayBuffer(file);
+  }
+  G.renderExcel = async function (root) {
+    disposeCharts(); await loadStyles();
+    root.innerHTML = `<div id="v-setup"><section class="panel"><div class="ph"><i class="ti ti-table-import"></i> Excel → Grafik</div>
+      <label class="drop" id="v-drop" style="min-height:240px"><input type="file" id="v-file" accept=".xlsx,.xls,.xlsm,.csv" hidden>
+        <div class="drop-ic"><i class="ti ti-table-import"></i></div><b>Herhangi bir Excel dosyasını buraya bırak</b><span>ya da tıklayıp seç · sütunlar otomatik tanınır, grafikler anında oluşur</span></label>
+      <span class="msg" id="v-msg"></span></section></div><div id="v-result"></div>`;
+    const inp = root.querySelector('#v-file'), drop = root.querySelector('#v-drop');
+    inp.onchange = () => { const f = inp.files[0]; inp.value = ''; f && autoRead(root, f); };
+    drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+    drop.ondragleave = () => drop.classList.remove('over');
+    drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); e.dataTransfer.files[0] && autoRead(root, e.dataTransfer.files[0]); };
+    if (AUTO) autoRender(root);
+  };
+  G.__auto = { autoDetect, sigOf };
 
   G.renderVeri = async function (root) {
     disposeCharts(); await loadStyles();

@@ -10,7 +10,7 @@
     const n = low(name);
     if (/(tarih|date|ay$|^ay\b|ay |dönem|donem|hafta|yıl|yil|month|week|year|period)/.test(n)) return 'Tarih';
     if (/(%|oran|pay|yüzde|yuzde|share|rate|büyüme|buyume|growth)/.test(n)) return 'Yüzde';
-    if (/(ciro|tutar|₺|tl\b|fiyat|hedef|bütçe|butce|maliyet|gelir|gider|iskonto|kâr|kar\b|revenue|sales value|price|cost|budget|amount)/.test(n)) return 'Para';
+    if (/(net satış|net satis|satış tutar|ciro|tutar|₺|tl\b|fiyat|hedef|bütçe|butce|maliyet|gelir|gider|iskonto|kâr|kar\b|revenue|sales value|price|cost|budget|amount)/.test(n)) return 'Para';
     if (/(tonaj|kg|adet|miktar|koli|ton\b|hacim|stok|sayı|sayi|units?|qty|volume|count)/.test(n)) return 'Sayı';
     const vals = samples.filter(v => v !== null && v !== undefined && v !== '');
     if (vals.length) {
@@ -132,6 +132,7 @@
     });
   }
 
+  window.ColGuess = { guessType, guessRole, TYPES, ROLES };
   window.renderSablon = function (root) {
     root.innerHTML = `<div class="split">
       <section class="panel"><div class="ph"><i class="ti ti-file-spreadsheet"></i> Yeni şablon</div><div id="tpl-editor"></div></section>

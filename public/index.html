@@ -184,8 +184,7 @@ header p{color:var(--muted);font-size:13px;margin-top:3px}
   <aside>
     <div class="brand"><div class="logo"><i class="ti ti-chart-arcs"></i></div><div><b>Excel Dashboard</b><small>Komuta merkezi</small></div></div>
     <div class="navlbl">Veri</div>
-    <div class="tab on" data-id="sablon"><i class="ti ti-file-spreadsheet"></i><span>Şablon Excel giriş</span></div>
-    <div class="tab" data-id="veri"><i class="ti ti-table-import"></i><span>Veri dolu Excel giriş</span></div>
+    <div class="tab on" data-id="excel"><i class="ti ti-table-import"></i><span>Excel → Grafik</span></div>
     <div class="tab" data-id="nielsen"><i class="ti ti-chart-dots-3"></i><span>Nielsen giriş</span></div>
     <div class="navlbl">Araçlar</div>
     <div class="tab" data-id="sihirbaz"><i class="ti ti-wand"></i><span>Grafik sihirbazı</span></div>
@@ -223,8 +222,9 @@ header p{color:var(--muted);font-size:13px;margin-top:3px}
 <script src="/js/sihirbaz.js"></script>
 <script src="/js/tema.js"></script>
 <script>
-const RENDER={sablon:r=>renderSablon(r),veri:r=>renderVeri(r),nielsen:r=>renderNielsen(r),haber:r=>renderHaber(r),radyo:r=>renderRadyo(r),sihirbaz:r=>renderSihirbaz(r),tema:r=>renderTema(r)};
+const RENDER={excel:r=>renderExcel(r),sablon:r=>renderSablon(r),veri:r=>renderVeri(r),nielsen:r=>renderNielsen(r),haber:r=>renderHaber(r),radyo:r=>renderRadyo(r),sihirbaz:r=>renderSihirbaz(r),tema:r=>renderTema(r)};
 const TABS={
+  excel:{t:"Excel → Grafik",d:"Herhangi bir Excel dosyasını bırak, grafikler otomatik oluşsun",i:"ti-table-import",s:2},
   sablon:{t:"Şablon Excel giriş",d:"Boş şablonları yükle, sütunları tanıt ve kaydet",i:"ti-file-spreadsheet",s:2},
   veri:{t:"Veri dolu Excel giriş",d:"Dolu dosyayı yükle, 12 hazır grafik otomatik oluşsun",i:"ti-table-import",s:2},
   nielsen:{t:"Nielsen giriş",d:"Aylık Nielsen dosyasından HARIBO analizleri",i:"ti-chart-dots-3",s:4},
@@ -247,7 +247,7 @@ function show(id){
   try{localStorage.setItem('tab',id)}catch(_){}
 }
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>show(t.dataset.id));
-let start='sablon';try{start=localStorage.getItem('tab')||start}catch(_){}
+let start='excel';try{start=localStorage.getItem('tab')||start}catch(_){}if(start==='sablon'||start==='veri')start='excel';
 show(TABS[start]?start:'sablon');
 
 /* Clock: analog + digital */
