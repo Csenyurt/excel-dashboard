@@ -100,3 +100,6 @@
 #themebg.on{opacity:1}#themebg::after{content:"";position:absolute;inset:0;background:linear-gradient(160deg,rgba(6,13,31,var(--dim,.72)),rgba(6,13,31,calc(var(--dim,.72) + .1)))}
 .fsel{height:34px;border-radius:9px;border:1px solid rgba(120,160,230,.3);background:rgba(6,16,36,.75);color:var(--text);padding:0 10px;font:13px inherit;font-family:inherit}
 .drawer.wzd{width:460px}.drawer.wzd .wz-panel{max-height:none}.cc-table{padding:0 16px 10px}
+.fxgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;max-height:420px;overflow:auto;padding-right:2px}
+.fxit{display:flex;flex-direction:column;gap:4px;padding:5px;border-radius:11px;border:1px solid var(--line);background:rgba(6,16,36,.45);color:#c9d4e8;font:11px inherit;font-family:inherit;cursor:pointer;text-align:center}
+.fxit canvas{width:100%;aspect-ratio:240/140;border-radius:7px;background:#000;display:block}.fxit:hover{border-color:var(--neon)}.fxit.on{border-color:var(--gold);background:rgba(242,214,138,.12);color:var(--gold)}

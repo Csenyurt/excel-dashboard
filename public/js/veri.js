@@ -299,7 +299,8 @@
     const byId = {}, CURRENT = {};
     built.forEach(c => { if (!c.need) CURRENT[c.id] = { title: c.style.title || c.name, sub: c.style.sub || c.sub, option: c.option, note: noteFor(c, M, info), measureType: M.primary && M.primary.type }; });
     built.forEach(c => { if (c.need) return; const el = box.querySelector('#ch-' + c.id); const ch = echarts.init(el, null, { renderer: 'canvas' }); ch.setOption(c.option); charts.push(ch); byId[c.id] = ch; });
-    built.forEach(c => { if (c.wz) tableUnder(box.querySelector('#ch-' + c.id).closest('.ccard'), c.wz); });
+    built.forEach(c => { if (!c.wz) return; tableUnder(box.querySelector('#ch-' + c.id).closest('.ccard'), c.wz); if (CURRENT[c.id]) { CURRENT[c.id].fx = c.wz.fx; CURRENT[c.id].fxSpeed = c.wz.fxSpeed; }
+      if (c.wz.fx && c.wz.fx !== 'Yok' && G.FX) { const el = box.querySelector('#ch-' + c.id); setTimeout(() => G.FX.play(el, byId[c.id], c.option, c.wz.fx, c.wz.fxSpeed), 150); } });
     box.querySelectorAll('[data-gear]').forEach(btn => btn.onclick = () => {
       const c = CHARTS.find(x => x.id === btn.dataset.gear), card = btn.closest('.ccard'), ch = byId[c.id];
       const cur = built.find(x => x.id === c.id);
@@ -313,7 +314,8 @@
         const saved = (STYLES[info.tplId + ':' + c.id] || {}).wz || (STYLES[info.tplId + ':*'] || {}).wz;
         const S0 = wzState(c, base, saved);
         const apply = (S1, play) => { S1.data = tableText(optToTable(base.option), S1); const o = G.Wizard.optionFor(S1); if (!o) return; if (play) ch.clear(); ch.setOption(o, true);
-          CURRENT[c.id] = { title: S1.title, sub: S1.sub, option: o, note: noteFor(c, M, info), measureType: M.primary && M.primary.type };
+          CURRENT[c.id] = { title: S1.title, sub: S1.sub, option: o, note: noteFor(c, M, info), measureType: M.primary && M.primary.type, fx: S1.fx, fxSpeed: S1.fxSpeed };
+          if (play && S1.fx && S1.fx !== 'Yok' && G.FX) G.FX.play(card.querySelector('.cc-body'), ch, o, S1.fx, S1.fxSpeed);
           card.querySelector('.cc-t').textContent = S1.title; card.querySelector('.cc-s').textContent = S1.sub || ''; tableUnder(card, S1); };
         G.Wizard.openEditor({ name: c.name, S: S0, onChange: apply,
           onSave: async (S1, all) => {

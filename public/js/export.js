@@ -117,15 +117,18 @@
     sx.fillStyle = 'rgba(120,160,230,.18)'; sx.fillRect(80, H - 82, W - 160, 1);
     sx.fillStyle = '#7f93b8'; sx.font = '18px "Segoe UI", system-ui, sans-serif'; sx.fillText(wrapText(sx, c.note || '', W - 360), 80, H - 64);
     sx.textAlign = 'right'; sx.fillStyle = '#c9a24a'; sx.fillText('Excel Dashboard', W - 80, H - 64);
-    const draw = () => { ctx.drawImage(st, 0, 0); const src = el.querySelector('canvas'); if (src) ctx.drawImage(src, 80, 168, cw, chh); };
+    const FXN = c.fx && G.FX && G.FX.BY[c.fx] && G.FX.BY[c.fx].fn ? c.fx : null, fxSt = {}; let fxBuf = null, fxT0 = 0; const fxDur = FXN ? G.FX.durOf(FXN, c.fxSpeed) : 0;
+    const draw = () => { ctx.drawImage(st, 0, 0); const src = el.querySelector('canvas'); if (!src) return;
+      if (FXN && fxT0) { if (!fxBuf) { fxBuf = document.createElement('canvas'); fxBuf.width = src.width; fxBuf.height = src.height; } G.FX.render(fxBuf, src, FXN, (performance.now() - fxT0) / fxDur, fxSt); ctx.drawImage(fxBuf, 80, 168, cw, chh); }
+      else if (!FXN) ctx.drawImage(src, 80, 168, cw, chh); };
     draw();
     const stream = cv.captureStream(30); const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8e6 });
     const parts = []; rec.ondataavailable = e => e.data.size && parts.push(e.data);
     const done = new Promise(r => rec.onstop = r);
     rec.start(200);
-    const o = c.option, dur = (o.animation === false ? 0 : (o.animationDuration || 900)) + 600 + (typeof o.animationDelay === 'function' ? o.animationDelay(12) : 0);
+    const o = c.option, dur = FXN ? fxDur + 300 : (o.animation === false ? 0 : (o.animationDuration || 900)) + 600 + (typeof o.animationDelay === 'function' ? o.animationDelay(12) : 0);
     await new Promise(r => setTimeout(r, 400)); // short intro on empty background
-    ch.setOption(Object.assign({}, o, o.animation === false ? { animation: true, animationDuration: 900 } : {}));
+    ch.setOption(Object.assign({}, o, FXN ? { animation: false } : o.animation === false ? { animation: true, animationDuration: 900 } : {})); if (FXN) fxT0 = performance.now() + 150;
     const t0 = performance.now();
     await new Promise(res => { const tick = () => { draw(); if (performance.now() - t0 < dur + 1800) requestAnimationFrame(tick); else res(); }; requestAnimationFrame(tick); });
     draw(); const poster = cv.toDataURL('image/png');

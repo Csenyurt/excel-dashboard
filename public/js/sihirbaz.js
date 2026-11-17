@@ -26,7 +26,7 @@
   const DEF = { data: SAMPLE, type: 'sutun', shape: 'yuvarlak', barWidth: 50, radius: 8, gap: 30, lineWidth: 3, symbol: 'circle', symbolSize: 8, inner: 45, palette: 'Altın gece', colors: {},
     hue: 0, sat: 100, light: 100, grad: 'dikey', opacity: 100, glow: 0, colorByData: false, bg: 'saydam', bg1: '#0a1630', bg2: '#1d2f5c', gridLine: 'kesik', axisColor: '#b5c3dc', font: 'Segoe UI', fontSize: 13,
     legend: 'üst', title: 'Yeni grafik', sub: 'Grafik sihirbazı ile oluşturuldu', labels: 'değer', labelPos: 'üst', fmt: 'otomatik', dec: 0, prefix: '', suffix: '', table: true, xName: '', yName: '', note: '',
-    anim: 'Yükselme', speed: 900, step: 1, topN: 0, sort: 'dosyadaki sıra' };
+    anim: 'Yükselme', speed: 900, step: 1, topN: 0, sort: 'dosyadaki sıra', fx: 'Yok', fxSpeed: 1, fxCat: 'Kamera' };
   let S = null, chart = null, ro = null;
   const STEPS = ['Veri', 'Grafik türü', 'Şekil', 'Renk ve ton', 'Zemin ve tema', 'Etiketler', 'Hareket ve indirme'];
 
@@ -196,14 +196,30 @@
       case 6: return `<div class="dr-sec"><h4>Başlıklar</h4>${inp('title', 'Başlık')}${inp('sub', 'Alt başlık')}${inp('xName', 'Yatay eksen adı')}${inp('yName', 'Dikey eksen adı')}${inp('note', 'Dipnot (kaynak, dönem…)', 'Kaynak: … · Dönem: …')}</div>
         <div class="dr-sec"><h4>Veri etiketleri</h4>${sel('labels', 'Gösterim', ['değer', 'yüzde', 'ad', 'ad+değer', 'yok'])}${sel('labelPos', 'Konum', ['üst', 'iç', 'iç üst', 'dış'])}
         ${sel('fmt', 'Sayı biçimi', ['otomatik', 'ham', 'bin', 'milyon', 'milyar'])}${range('dec', 'Ondalık', 0, 3)}${inp('prefix', 'Ön ek', '₺ ')}${inp('suffix', 'Son ek', ' ton')}${tog('table', 'Grafiğin altında veri tablosu')}</div>`;
-      case 7: return `<div class="dr-sec"><h4>Hareket</h4>${sel('anim', 'Animasyon (30)', (G.Stil && G.Stil.ANIMS || [{ n: 'Yükselme' }]).map(a => a.n))}${range('speed', 'Süre', 200, 3000, 100, ' ms')}
+      case 7: return `${fxPicker()}<div class="dr-sec"><h4>Grafik içi hareket</h4>${sel('anim', 'Animasyon (30)', (G.Stil && G.Stil.ANIMS || [{ n: 'Yükselme' }]).map(a => a.n))}${range('speed', 'Süre', 200, 3000, 100, ' ms')}
           <button class="btn ghost" id="wz-play"><i class="ti ti-player-play"></i> Animasyonu oynat</button></div>
         <div class="dr-sec"><h4>İndir ve kullan</h4><div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn gold" id="wz-dl"><i class="ti ti-download"></i> İndir (PNG · PDF · PPTX · video)</button>
           <button class="btn" id="wz-add"><i class="ti ti-presentation-analytics"></i> Sunuma ekle</button><button class="btn" id="wz-save"><i class="ti ti-device-floppy"></i> Kütüphaneye kaydet</button></div><span class="msg" id="wz-msg"></span></div>
         <div class="dr-sec"><h4>Kayıtlı grafiklerim</h4><div id="wz-lib" class="bk-list"></div></div>`;
     }
   }
-  function current() { const o = finalOption(S); return o && { title: S.title, sub: S.sub, option: o, note: S.note, notes: S.sub }; }
+  function fxPicker() {
+    if (!G.FX) return ''; const F = G.FX, cats = F.CATS, cur = F.BY[S.fx] && F.BY[S.fx].fn ? S.fx : 'Yok', cat = cats.includes(S.fxCat) ? S.fxCat : cats[0];
+    return `<div class="dr-sec"><h4>Sinematik efekt (${F.LIST.filter(x => x.fn).length})</h4><p class="cc-foot" style="border:0;padding:0 0 8px">Önizlemenin üstüne gel, efekt oynasın. Tıklayınca grafiğe uygulanır. Seçili: <b class="fxcur" style="color:var(--gold)">${esc(cur)}</b></p>
+      <div class="chips-sel" style="margin-bottom:10px">${cats.map(c => `<span class="chsel${c === cat ? ' on' : ''}" data-fxcat="${esc(c)}">${esc(c)} · ${F.LIST.filter(x => x.cat === c).length}</span>`).join('')}<span class="chsel${cur === 'Yok' ? ' on' : ''}" data-fx="Yok">Efekt yok</span></div>
+      <div class="fxgrid">${F.LIST.filter(x => x.cat === cat).map(x => `<button class="fxit${x.n === cur ? ' on' : ''}" data-fx="${esc(x.n)}"><canvas width="240" height="140"></canvas><span>${esc(x.n)}</span></button>`).join('')}</div>
+      ${range('fxSpeed', 'Efekt süresi (kat)', .5, 2.5, .1, '×')}</div>`;
+  }
+  function bindFx(pnl, root) {
+    if (!G.FX) return; const F = G.FX;
+    pnl.querySelectorAll('[data-fxcat]').forEach(b => b.onclick = () => { S.fxCat = b.dataset.fxcat; paintStep(root); });
+    pnl.querySelectorAll('.fxit').forEach(b => { const cv = b.querySelector('canvas'), name = b.dataset.fx, src = F.sample(); let raf = 0;
+      const still = () => { const st = {}; F.render(cv, src, name, .05, st); F.render(cv, src, name, .5, st); }; still();
+      b.onmouseenter = () => { const st = {}, t0 = performance.now(), d = F.durOf(name, 1); const tick = () => { const t = ((performance.now() - t0) % (d + 600)) / d; F.render(cv, src, name, t, st); raf = requestAnimationFrame(tick); }; tick(); };
+      b.onmouseleave = () => { cancelAnimationFrame(raf); still(); }; });
+    pnl.querySelectorAll('[data-fx]').forEach(b => b.addEventListener('click', () => { S.fx = b.dataset.fx; pnl.querySelectorAll('[data-fx]').forEach(x => x.classList.toggle('on', x.dataset.fx === S.fx)); const lb = pnl.querySelector('.fxcur'); if (lb) lb.textContent = S.fx; HOOK.draw(true); HOOK.persist(); }));
+  }
+  function current() { const o = finalOption(S); return o && { title: S.title, sub: S.sub, option: o, note: S.note, notes: S.sub, fx: S.fx, fxSpeed: S.fxSpeed }; }
   function draw(play) {
     const pv = document.getElementById('wz-chart'), box = document.getElementById('wz-prevcard'); if (!pv) return;
     const o = finalOption(S);
@@ -212,7 +228,7 @@
     document.getElementById('wz-n').innerHTML = S.note ? `<i class="ti ti-info-circle"></i> ${esc(S.note)}` : ''; document.getElementById('wz-n').style.display = S.note ? '' : 'none';
     if (!o) { if (chart) chart.clear(); return; }
     if (S.bg !== 'saydam') o.backgroundColor = S.bg === 'düz renk' ? S.bg1 : { type: 'linear', x: 0, y: 0, x2: 1, y2: 1, colorStops: [{ offset: 0, color: S.bg1 }, { offset: 1, color: S.bg2 }] };
-    if (typeof echarts !== 'undefined') { if (!chart) chart = echarts.init(pv); if (play) chart.clear(); chart.setOption(o, true); }
+    if (typeof echarts !== 'undefined') { if (!chart) chart = echarts.init(pv); if (play) chart.clear(); chart.setOption(o, true); if (play && S.fx && S.fx !== 'Yok' && G.FX) G.FX.play(pv, chart, o, S.fx, S.fxSpeed); }
     const D = parseData(S.data), tb = document.getElementById('wz-table');
     tb.innerHTML = S.table && D ? `<table class="dtable"><tr><th></th>${D.cats.map(c => `<th>${esc(c)}</th>`).join('')}</tr>${D.series.map(s => `<tr><td>${esc(s.name)}</td>${s.data.map(v => `<td>${esc(fmtV(v, S))}</td>`).join('')}</tr>`).join('')}</table>` : '';
   }
@@ -253,6 +269,7 @@
     if (q('#wz-add')) q('#wz-add').onclick = () => { const c = current(); if (c) { G.Basket.add(c); q('#wz-msg').className = 'msg ok'; q('#wz-msg').textContent = 'Sunuma eklendi ✓'; } };
     if (q('#wz-save')) q('#wz-save').onclick = async () => { const all = await G.Cards.styles(); const list = (all['sihirbaz:kutuphane'] && all['sihirbaz:kutuphane'].list || []).slice(0, 39);
       const item = Object.assign({}, S, { at: Date.now() }); delete item.step; list.unshift(item); await G.Cards.putStyle('sihirbaz:kutuphane', { list }); q('#wz-msg').className = 'msg ok'; q('#wz-msg').textContent = 'Kaydedildi ✓'; lib(root); };
+    bindFx(pnl, root);
     lib(root);
   }
   function paintAll(root) { paintStep(root); HOOK.draw(true); }
