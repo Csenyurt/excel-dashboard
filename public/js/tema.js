@@ -4,29 +4,29 @@
   // id, ad, Wikimedia araması, [vurgu, ikinci vurgu, üçüncü], zemin karartma
   const THEMES = [
     ['klasik', 'Gece altını (varsayılan)', '', ['#f2d68a', '#5fb8f0', '#5dcaa5'], .72],
-    ['uzay', 'Uzay', 'Pillars of Creation James Webb', ['#c9a7ff', '#5fd4f0', '#ff9ecf'], .55],
-    ['formula', 'Formula', 'Formula One car race track', ['#ff2d2d', '#f5f5f5', '#ffc400'], .7],
-    ['antikroma', 'Antik Roma', 'Roman Forum ruins Rome', ['#e3b261', '#b5482f', '#efe0c0'], .68],
-    ['antikmisir', 'Antik Mısır', 'Karnak temple columns Luxor', ['#e9c46a', '#2a9d8f', '#f4a261'], .66],
-    ['surreal', 'Sürrealistik', 'Salar de Uyuni reflection', ['#ff9de2', '#7ae7ff', '#fff59d'], .5],
-    ['antiksavas', 'Antik dönem savaş', 'Roman legion reenactment', ['#d4a373', '#9b2226', '#e9d8a6'], .7],
-    ['modernsavas', 'Modern savaş', 'Leopard 2 tank exercise', ['#a3b18a', '#dda15e', '#e9edc9'], .72],
-    ['gokyuzu', 'Gökyüzü', 'cumulus clouds blue sky', ['#ffd166', '#8ecae6', '#ffffff'], .5],
-    ['harita', 'Dünya haritası', 'antique world map 17th century', ['#e9c46a', '#8ab17d', '#f4a261'], .62],
-    ['kadran', 'Yarış arabası kadranı', 'sports car instrument cluster speedometer', ['#ff6b35', '#4cc9f0', '#f72585'], .62],
-    ['yazilim', 'Yazılım dünyası', 'source code computer screen programming', ['#61dafb', '#c792ea', '#c3e88d'], .7],
-    ['dijital', 'Dijital yağmur', 'server room data center', ['#39ff14', '#00e5a0', '#b2ff59'], .82],
-    ['kolezyum', 'Kolezyum', 'Colosseum Rome exterior', ['#f2c48d', '#c1666b', '#d4e09b'], .62],
-    ['paris', 'Paris ve Eyfel', 'Eiffel Tower Paris Trocadero', ['#f7c873', '#8ecae6', '#ffafcc'], .6],
-    ['roma', 'Roma', 'Trevi Fountain Rome', ['#e9c46a', '#e76f51', '#a8dadc'], .62],
-    ['venedik', 'Venedik', 'Venice Grand Canal Rialto', ['#ffb703', '#219ebc', '#fb8500'], .58],
-    ['kahire', 'Kahire', 'Cairo skyline Nile', ['#f4a261', '#e9c46a', '#2a9d8f'], .62],
-    ['piramitler', 'Piramitler', 'Giza pyramids', ['#f6bd60', '#f28482', '#84a59d'], .55],
-    ['istanbul', 'İstanbul', 'Istanbul Bosphorus Sultan Ahmed Mosque skyline', ['#f2d68a', '#e63946', '#5fb8f0'], .6],
-    ['tokyo', 'Tokyo', 'Tokyo Shibuya night', ['#ff4d6d', '#4cc9f0', '#ffd60a'], .62],
-    ['pekin', 'Pekin', 'Forbidden City Beijing', ['#e63946', '#ffb703', '#f1faee'], .62],
-    ['newyork', 'New York ve Özgürlük Heykeli', 'Statue of Liberty Manhattan skyline', ['#7bdff2', '#f2d68a', '#b2f7ef'], .6]];
-  const DEF = { id: 'klasik', n: 0, a1: null, a2: null, a3: null, hue: 0, sat: 100, light: 100, dim: null, blur: 0, custom: null };
+    ['uzay', 'Uzay', 'Carina Nebula Cosmic Cliffs Webb', ['#c9a7ff', '#5fd4f0', '#ff9ecf'], 0.22],
+    ['formula', 'Formula', 'Formula One car racing on track', ['#ff2d2d', '#f5f5f5', '#ffc400'], 0.28],
+    ['antikroma', 'Antik Roma', 'Roman Forum panorama', ['#e3b261', '#b5482f', '#efe0c0'], 0.27],
+    ['antikmisir', 'Antik Mısır', 'Karnak temple columns Luxor', ['#e9c46a', '#2a9d8f', '#f4a261'], 0.26],
+    ['surreal', 'Sürrealistik', 'Salar de Uyuni reflection', ['#ff9de2', '#7ae7ff', '#fff59d'], 0.20],
+    ['antiksavas', 'Antik dönem savaş', 'Roman legion reenactment', ['#d4a373', '#9b2226', '#e9d8a6'], 0.28],
+    ['modernsavas', 'Modern savaş', 'Leopard 2 tank exercise', ['#a3b18a', '#dda15e', '#e9edc9'], 0.29],
+    ['gokyuzu', 'Gökyüzü', 'cumulus clouds blue sky', ['#ffd166', '#8ecae6', '#ffffff'], 0.20],
+    ['harita', 'Dünya haritası', 'antique world map 17th century', ['#e9c46a', '#8ab17d', '#f4a261'], 0.25],
+    ['kadran', 'Yarış arabası kadranı', 'car speedometer tachometer close-up night', ['#ff6b35', '#4cc9f0', '#f72585'], 0.25],
+    ['yazilim', 'Yazılım dünyası', 'source code computer screen programming', ['#61dafb', '#c792ea', '#c3e88d'], 0.28],
+    ['dijital', 'Dijital yağmur', 'server room data center', ['#39ff14', '#00e5a0', '#b2ff59'], 0.33],
+    ['kolezyum', 'Kolezyum', 'Colosseum Rome exterior', ['#f2c48d', '#c1666b', '#d4e09b'], 0.25],
+    ['paris', 'Paris ve Eyfel', 'Eiffel Tower from Trocadero', ['#f7c873', '#8ecae6', '#ffafcc'], 0.24],
+    ['roma', 'Roma', 'Trevi Fountain Rome', ['#e9c46a', '#e76f51', '#a8dadc'], 0.25],
+    ['venedik', 'Venedik', 'Venice Grand Canal Rialto', ['#ffb703', '#219ebc', '#fb8500'], 0.23],
+    ['kahire', 'Kahire', 'Cairo skyline Nile', ['#f4a261', '#e9c46a', '#2a9d8f'], 0.25],
+    ['piramitler', 'Piramitler', 'Giza pyramids', ['#f6bd60', '#f28482', '#84a59d'], 0.22],
+    ['istanbul', 'İstanbul', 'Istanbul Bosphorus Sultan Ahmed Mosque skyline', ['#f2d68a', '#e63946', '#5fb8f0'], 0.24],
+    ['tokyo', 'Tokyo', 'Tokyo Shibuya night', ['#ff4d6d', '#4cc9f0', '#ffd60a'], 0.25],
+    ['pekin', 'Pekin', 'Forbidden City Beijing', ['#e63946', '#ffb703', '#f1faee'], 0.25],
+    ['newyork', 'New York ve Özgürlük Heykeli', 'Statue of Liberty Manhattan skyline', ['#7bdff2', '#f2d68a', '#b2f7ef'], 0.24]];
+  const DEF = { id: 'klasik', n: 0, a1: null, a2: null, a3: null, hue: 0, sat: 100, light: 100, dim: null, blur: 0, custom: null, glass: 35 };
   let T = Object.assign({}, DEF), rain = null;
 
   function hsl(hex) { let c = hex.replace('#', ''); const r = parseInt(c.slice(0, 2), 16) / 255, g = parseInt(c.slice(2, 4), 16) / 255, b = parseInt(c.slice(4, 6), 16) / 255;
@@ -37,16 +37,18 @@
   const adj = (hex, t) => { const [h, s, l] = hsl(hex); return toHex((h + t.hue + 360) % 360, Math.min(100, s * t.sat / 100), Math.min(95, l * t.light / 100)); };
   const rgba = (hex, a) => `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${a})`;
   const def = id => THEMES.find(x => x[0] === id) || THEMES[0];
-  const photoUrl = t => { const d = def(t.id); return t.custom ? t.custom : d[2] ? `/api/photo?id=${d[0]}&n=${t.n || 0}&q=${encodeURIComponent(d[2])}` : ''; };
+  const hq = q => { let h = 7; for (const c of q) h = (h * 31 + c.charCodeAt(0)) % 9973; return h; };
+  const pid = d => d[0] + '-' + hq(d[2]);
+  const photoUrl = t => { const d = def(t.id); return t.custom ? t.custom : d[2] ? `/api/photo?id=${pid(d)}&n=${t.n || 0}&q=${encodeURIComponent(d[2])}` : ''; };
   function colors(t) { const d = def(t.id); return [t.a1 || d[3][0], t.a2 || d[3][1], t.a3 || d[3][2]].map(c => adj(c, t)); }
 
   function apply(t) {
-    const [g, n, x] = colors(t), d = def(t.id), dim = t.dim ?? d[4];
+    const [g, n, x] = colors(t), d = def(t.id), dim = t.dim ?? d[4], G0 = (t.glass ?? 35) / 100;
     const r = document.documentElement.style;
     r.setProperty('--gold', g); r.setProperty('--gold2', adj(g, { hue: 0, sat: 100, light: 78 })); r.setProperty('--neon', n); r.setProperty('--acc3', x); r.setProperty('--dim', dim);
     G.__THEME_COLORS = [g, n, x, adj(g, { hue: 0, sat: 90, light: 70 }), adj(n, { hue: 0, sat: 90, light: 70 }), adj(x, { hue: 0, sat: 90, light: 70 }), adj(g, { hue: 30, sat: 100, light: 100 }), adj(n, { hue: -30, sat: 100, light: 100 })];
     let bg = document.getElementById('themebg'); if (!bg) { bg = document.createElement('div'); bg.id = 'themebg'; document.body.insertBefore(bg, document.querySelector('.app')); }
-    const url = photoUrl(t); bg.style.filter = t.blur ? `blur(${t.blur}px)` : '';
+    const url = photoUrl(t); document.body.classList.toggle('photo', !!url); bg.style.filter = t.blur ? `blur(${t.blur}px)` : '';
     if (url) { const im = new Image(); im.onload = () => { bg.style.backgroundImage = `url("${url}")`; bg.classList.add('on'); }; im.onerror = () => bg.classList.remove('on'); im.src = url; } else bg.classList.remove('on');
     let st = document.getElementById('theme-css'); if (!st) { st = document.createElement('style'); st.id = 'theme-css'; document.head.appendChild(st); }
     st.textContent = `
@@ -56,7 +58,11 @@
       .ccard:hover,.tgrid button.on,.wz-steps span.on,.st.on,.th.on{border-color:${rgba(g, .6)}}.kpi>i{background:${rgba(g, .12)}}
       .filechip{color:${n};border-color:${rgba(n, .35)};background:${rgba(n, .08)}}.drop:hover,.drop.over{border-color:${g}}
       .player{border-color:${rgba(g, .4)};background:linear-gradient(120deg,${rgba(g, .14)},${rgba(n, .08)})}.player .eq i{background:${g}}
-      aside{background:rgba(6,13,31,${Math.min(.85, dim + .05)})}.panel,.ccard,.kpi,.ins,.news,.hb-tv{backdrop-filter:blur(10px)}
+      ${url ? `body.photo .stage{background:transparent!important;backdrop-filter:none!important;border-color:rgba(255,255,255,.08)}
+      body.photo .stage::after{display:none}
+      body.photo aside{background:rgba(6,13,31,${(G0 * .9).toFixed(2)})!important;backdrop-filter:blur(12px)}
+      body.photo .panel,body.photo .ccard,body.photo .kpi,body.photo .ins,body.photo .news,body.photo .hb-tv,body.photo .tplcard,body.photo .player,body.photo .clockbox,body.photo .side-foot,body.photo .v-sum .pill,body.photo .bk-it{background:rgba(6,13,31,${G0.toFixed(2)})!important;backdrop-filter:blur(${Math.round(4 + G0 * 14)}px) saturate(1.2);border-color:rgba(255,255,255,.14)!important}
+      body.photo .cc-t,body.photo h1,body.photo .ph,body.photo .kpi b{text-shadow:0 1px 8px rgba(0,0,0,.6)}` : ''}
       #sky{opacity:${url ? 0 : 1};transition:opacity .8s}canvas#stars{opacity:${t.id === 'uzay' || t.id === 'klasik' ? .55 : .15}}`;
     if (t.id === 'dijital') startRain(g); else stopRain();
   }
@@ -75,7 +81,7 @@
     const paint = () => {
       const [g, n, x] = colors(T), d = def(T.id);
       root.innerHTML = `<section class="panel"><div class="ph"><i class="ti ti-photo"></i> Temalar (${THEMES.length}) <small style="color:var(--muted);font-weight:400;margin-left:8px">Seçtiğin tema tüm sekmelere uygulanır</small></div>
-        <div class="th-grid">${THEMES.map(t => `<div class="th${t[0] === T.id ? ' on' : ''}" data-th="${t[0]}" style="${t[2] ? `background-image:url('/api/photo?w=s&id=${t[0]}&n=0&q=${encodeURIComponent(t[2])}')` : 'background:linear-gradient(160deg,#060d1f,#0a1630 55%,#1a2a50)'}">
+        <div class="th-grid">${THEMES.map(t => `<div class="th${t[0] === T.id ? ' on' : ''}" data-th="${t[0]}" style="${t[2] ? `background-image:url('/api/photo?w=s&id=${pid(t)}&n=0&q=${encodeURIComponent(t[2])}')` : 'background:linear-gradient(160deg,#060d1f,#0a1630 55%,#1a2a50)'}">
           <div class="dots">${t[3].map(c => `<i style="background:${c}"></i>`).join('')}</div><b>${esc(t[1])}</b></div>`).join('')}</div></section>
         <div class="th-tune"><section class="panel"><div class="ph"><i class="ti ti-palette"></i> Tema renkleri · ${esc(d[1])}</div>
             <div class="sw"><input type="color" id="c1" value="${T.a1 || d[3][0]}"><span>Ana vurgu (başlıklar, butonlar)</span><b style="color:${g}">●</b></div>
@@ -87,6 +93,7 @@
             <div class="dr-r"><span>Doygunluk</span><input type="range" id="t-sat" min="0" max="200" value="${T.sat}"><b>${T.sat}%</b></div>
             <div class="dr-r"><span>Parlaklık</span><input type="range" id="t-light" min="40" max="160" value="${T.light}"><b>${T.light}%</b></div>
             <div class="dr-r"><span>Fotoğraf karartma</span><input type="range" id="t-dim" min="0" max="95" value="${Math.round((T.dim ?? d[4]) * 100)}"><b>${Math.round((T.dim ?? d[4]) * 100)}%</b></div>
+            <div class="dr-r"><span>Panel koyuluğu (az = fotoğraf daha çok görünür)</span><input type="range" id="t-glass" min="5" max="85" value="${T.glass ?? 35}"><b>${T.glass ?? 35}%</b></div>
             <div class="dr-r"><span>Fotoğraf bulanıklığı</span><input type="range" id="t-blur" min="0" max="20" value="${T.blur}"><b>${T.blur}px</b></div></section>
           <section class="panel"><div class="ph"><i class="ti ti-camera"></i> Fotoğraf</div>
             <p class="cc-foot" style="border:0;padding:0 0 10px">Fotoğraflar Wikimedia Commons'tan gelir (gerçek, telifsiz fotoğraflar). Beğenmezsen başka bir kare dene ya da kendi fotoğrafını yükle.</p>
@@ -97,9 +104,9 @@
       root.querySelectorAll('[data-th]').forEach(el => el.onclick = () => { T = Object.assign({}, DEF, { id: el.dataset.th }); apply(T); save(); paint(); });
       q('#c1').oninput = e => set('a1', e.target.value); q('#c2').oninput = e => set('a2', e.target.value); q('#c3').oninput = e => set('a3', e.target.value);
       ['c1', 'c2', 'c3'].forEach(id => q('#' + id).onchange = () => paint());
-      q('#t-def').onclick = () => { Object.assign(T, { a1: null, a2: null, a3: null, hue: 0, sat: 100, light: 100, dim: null, blur: 0 }); apply(T); save(); paint(); };
+      q('#t-def').onclick = () => { Object.assign(T, { a1: null, a2: null, a3: null, hue: 0, sat: 100, light: 100, dim: null, blur: 0, glass: 35 }); apply(T); save(); paint(); };
       const rng = (id, k, f) => { const el = q('#' + id); el.oninput = () => { T[k] = f ? f(+el.value) : +el.value; const b = el.parentElement.querySelector('b'); if (b) b.textContent = el.value + (id === 't-blur' ? 'px' : '%'); apply(T); save(); }; el.onchange = () => paint(); };
-      rng('t-hue', 'hue'); rng('t-sat', 'sat'); rng('t-light', 'light'); rng('t-dim', 'dim', v => v / 100); rng('t-blur', 'blur');
+      rng('t-hue', 'hue'); rng('t-sat', 'sat'); rng('t-light', 'light'); rng('t-dim', 'dim', v => v / 100); rng('t-blur', 'blur'); rng('t-glass', 'glass');
       q('#t-next').onclick = () => { T.n = ((T.n || 0) + 1) % 10; T.custom = null; apply(T); save(); paint(); };
       q('#t-up').onchange = e => { const f = e.target.files[0]; if (!f) return; const fr = new FileReader(); fr.onload = ev => { const im = new Image(); im.onload = () => {
         const c = document.createElement('canvas'), s = Math.min(1, 2200 / im.width); c.width = im.width * s; c.height = im.height * s; c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
